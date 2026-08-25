@@ -1,0 +1,341 @@
+.mw-monster-evolution {
+	--monster-evolution-background: transparent;
+	--monster-evolution-card: rgba( 16, 22, 30, 0.82 );
+	--monster-evolution-color: #fff;
+	--monster-evolution-muted: rgba( 255, 255, 255, 0.78 );
+	--monster-evolution-border: rgba( 255, 255, 255, 0.42 );
+	--monster-evolution-accent: #6ea8ff;
+	--monster-evolution-edge: #fff;
+	margin-block: 1em;
+	color: var( --monster-evolution-color );
+}
+
+.mw-monster-evolution-viewport {
+	box-sizing: border-box;
+	width: fit-content;
+	max-width: 100%;
+	overflow: auto;
+	overscroll-behavior: contain;
+	border: 0;
+	background: var( --monster-evolution-background );
+}
+
+.mw-monster-evolution-viewport:focus-visible {
+	outline: 2px solid var( --monster-evolution-accent );
+	outline-offset: 2px;
+}
+
+.mw-monster-evolution-stage,
+.mw-monster-evolution-canvas {
+	position: relative;
+	min-height: 10rem;
+}
+
+.mw-monster-evolution-canvas {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-start;
+	gap: 1.5rem;
+	padding: 2rem;
+	transform-origin: top left;
+}
+
+.mw-monster-evolution--enhanced .mw-monster-evolution-canvas {
+	display: block;
+	padding: 0;
+}
+
+.mw-monster-evolution-node {
+	box-sizing: border-box;
+	display: flex;
+	position: relative;
+	z-index: 2;
+	width: 10rem;
+	min-height: 6rem;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 0.3rem;
+	padding: 0.75rem;
+	border: 1px solid var( --monster-evolution-border );
+	border-radius: 8px;
+	background: var( --monster-evolution-card );
+	color: var( --monster-evolution-color );
+	box-shadow: 0 2px 8px rgba( 0, 0, 0, 0.4 );
+	text-align: center;
+}
+
+.mw-monster-evolution--enhanced .mw-monster-evolution-node {
+	position: absolute;
+}
+
+.mw-monster-evolution-node:focus-within {
+	border-color: var( --monster-evolution-accent );
+	box-shadow: 0 0 0 2px var( --monster-evolution-accent );
+}
+
+.mw-monster-evolution-node-image {
+	display: flex;
+	min-width: 3rem;
+	min-height: 3rem;
+	align-items: center;
+	justify-content: center;
+}
+
+.mw-monster-evolution-node-image img {
+	display: block;
+	max-width: 100%;
+	height: auto;
+}
+
+.mw-monster-evolution-node-image--missing {
+	border: 1px dashed var( --monster-evolution-border );
+	border-radius: 4px;
+	color: var( --monster-evolution-muted );
+	font-size: 0.8rem;
+}
+
+.mw-monster-evolution-node-name {
+	font-weight: 700;
+	overflow-wrap: anywhere;
+}
+
+.mw-monster-evolution-node-form,
+.mw-monster-evolution-node-subtitle {
+	color: var( --monster-evolution-muted );
+	font-size: 0.85rem;
+	overflow-wrap: anywhere;
+}
+
+.mw-monster-evolution-node-details {
+	width: 100%;
+	font-size: 0.8rem;
+	text-align: start;
+}
+
+.mw-monster-evolution-node-details summary,
+.mw-monster-evolution-condition summary {
+	cursor: pointer;
+}
+
+.mw-monster-evolution-highlight {
+	display: none;
+	position: absolute;
+	inset-block-start: 0.25rem;
+	inset-inline-end: 0.25rem;
+	min-width: 1.75rem;
+	min-height: 1.75rem;
+	padding: 0;
+	border: 1px solid var( --monster-evolution-border );
+	border-radius: 50%;
+	background: var( --monster-evolution-card );
+	color: var( --monster-evolution-accent );
+	cursor: pointer;
+}
+
+.mw-monster-evolution--enhanced .mw-monster-evolution-highlight {
+	display: block;
+}
+
+.mw-monster-evolution-highlight[ aria-pressed='true' ] {
+	background: var( --monster-evolution-accent );
+	color: var( --background-color-base-fixed, #fff );
+}
+
+.mw-monster-evolution-svg {
+	display: none;
+	position: absolute;
+	inset: 0;
+	z-index: 0;
+	overflow: visible;
+}
+
+.mw-monster-evolution--enhanced .mw-monster-evolution-svg {
+	display: block;
+}
+
+.mw-monster-evolution-edge-path {
+	fill: none;
+	stroke: var( --monster-evolution-edge );
+	stroke-width: 2;
+	vector-effect: non-scaling-stroke;
+}
+
+.mw-monster-evolution-svg marker path {
+	fill: var( --monster-evolution-edge );
+}
+
+.mw-monster-evolution-edge-path--fusion {
+	stroke: var( --monster-evolution-edge );
+	stroke-width: 3;
+}
+
+.mw-monster-evolution-edge-path--temporary,
+.mw-monster-evolution-edge-path--reversible {
+	stroke-dasharray: 6 4;
+}
+
+.mw-monster-evolution-edge-label {
+	position: absolute;
+	z-index: 3;
+	max-width: 10rem;
+	padding: 0.15rem 0.35rem;
+	border: 1px solid var( --monster-evolution-border );
+	border-radius: 3px;
+	background: var( --monster-evolution-card );
+	color: var( --monster-evolution-color );
+	box-shadow: 0 1px 4px rgba( 0, 0, 0, 0.45 );
+	font-size: 0.75rem;
+	line-height: 1.25;
+	text-align: center;
+	transform: translate( -50%, -50% );
+	overflow-wrap: anywhere;
+}
+
+.mw-monster-evolution-relationships {
+	margin-block-start: 0.75rem;
+}
+
+/* Keep the textual edge list available to assistive technology after the visual graph is ready. */
+.mw-monster-evolution--enhanced .mw-monster-evolution-relationships {
+	position: absolute !important;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect( 0, 0, 0, 0 );
+	white-space: nowrap;
+	border: 0;
+}
+
+.mw-monster-evolution-relationships > ul {
+	margin-block: 0;
+}
+
+.mw-monster-evolution-condition {
+	margin-inline-start: 1rem;
+}
+
+.mw-monster-evolution-controls {
+	display: none;
+	flex-wrap: wrap;
+	gap: 0.35rem;
+	margin-block-end: 0.5rem;
+}
+
+.mw-monster-evolution--enhanced .mw-monster-evolution-controls {
+	display: flex;
+}
+
+.mw-monster-evolution-control {
+	padding: 0.3rem 0.65rem;
+	border: 1px solid var( --monster-evolution-border );
+	border-radius: 3px;
+	background: var( --monster-evolution-card );
+	color: var( --monster-evolution-color );
+	cursor: pointer;
+}
+
+.mw-monster-evolution-control:hover,
+.mw-monster-evolution-control:focus-visible {
+	border-color: var( --monster-evolution-accent );
+}
+
+.mw-monster-evolution--compact .mw-monster-evolution-node {
+	width: 8rem;
+	min-height: 4rem;
+	padding: 0.45rem;
+}
+
+.mw-monster-evolution--minimal .mw-monster-evolution-node {
+	box-shadow: none;
+	border-radius: 2px;
+}
+
+.mw-monster-evolution--cards .mw-monster-evolution-node {
+	border-width: 0;
+	box-shadow: 0 2px 8px rgba( 0, 0, 0, 0.2 );
+}
+
+.mw-monster-evolution--highlighting .mw-monster-evolution-is-dimmed {
+	opacity: 0.22;
+}
+
+.mw-monster-evolution-node,
+.mw-monster-evolution-edge-path,
+.mw-monster-evolution-edge-label {
+	transition: opacity 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.mw-monster-evolution-visually-hidden {
+	position: absolute !important;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect( 0, 0, 0, 0 );
+	white-space: nowrap;
+	border: 0;
+}
+
+@media ( max-width: 720px ) {
+	.mw-monster-evolution-node {
+		width: 8.5rem;
+	}
+
+	.mw-monster-evolution-viewport {
+		max-height: 75vh;
+	}
+}
+
+@media ( prefers-reduced-motion: reduce ) {
+	.mw-monster-evolution-node,
+	.mw-monster-evolution-edge-path,
+	.mw-monster-evolution-edge-label {
+		transition: none;
+	}
+}
+
+@media print {
+	.mw-monster-evolution-controls,
+	.mw-monster-evolution-highlight,
+	.mw-monster-evolution-svg,
+	.mw-monster-evolution-edge-label {
+		display: none !important;
+	}
+
+	.mw-monster-evolution--enhanced .mw-monster-evolution-relationships {
+		position: static !important;
+		width: auto;
+		height: auto;
+		margin: 0.75rem 0 0;
+		overflow: visible;
+		clip: auto;
+		white-space: normal;
+	}
+
+	.mw-monster-evolution-viewport {
+		overflow: visible;
+		border: 0;
+	}
+
+	.mw-monster-evolution-stage,
+	.mw-monster-evolution-canvas {
+		display: flex !important;
+		position: static !important;
+		width: auto !important;
+		height: auto !important;
+		min-height: 0;
+		flex-wrap: wrap;
+		gap: 1rem;
+		padding: 0;
+		transform: none !important;
+	}
+
+	.mw-monster-evolution-node {
+		position: static !important;
+		break-inside: avoid;
+	}
+}

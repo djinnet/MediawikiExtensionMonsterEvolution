@@ -1,0 +1,248 @@
+name: CI and release
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 4 * * 1'
+
+permissions:
+  contents: read
+
+env:
+  EXTENSION_NAME: MonsterEvolution
+
+jobs:
+  php-static:
+    name: PHP static checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: ast, mbstring
+          coverage: none
+      - uses: ramsey/composer-install@v3
+      - run: composer validate --strict
+      - run: composer test
+      - run: composer audit --locked
+      - run: composer phan
+
+  javascript:
+    name: JavaScript and security checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm test
+
+  mediawiki-tests:
+    name: MediaWiki ${{ matrix.branch }} / PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - branch: REL1_35
+            php: '8.1'
+          - branch: REL1_43
+            php: '8.2'
+          - branch: REL1_45
+            php: '8.3'
+          - branch: REL1_46
+            php: '8.3'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: wikimedia/mediawiki
+          ref: ${{ matrix.branch }}
+          path: mediawiki
+      - uses: actions/checkout@v4
+        with:
+          path: mediawiki/extensions/MonsterEvolution
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: intl, mbstring, sqlite3
+          coverage: none
+      - run: composer install --no-interaction --prefer-dist
+        working-directory: mediawiki
+      - name: Validate extension registration (MediaWiki 1.35)
+        if: matrix.branch == 'REL1_35'
+        run: php maintenance/validateRegistrationFile.php extensions/MonsterEvolution/extension.json
+        working-directory: mediawiki
+      - name: Validate extension registration
+        if: matrix.branch != 'REL1_35'
+        run: php maintenance/run.php validateRegistrationFile extensions/MonsterEvolution/extension.json
+        working-directory: mediawiki
+      - name: Run standalone parser and security tests
+        run: php extensions/MonsterEvolution/tests/run-unit.php
+        working-directory: mediawiki
+      - name: Verify ResourceLoader dependencies resolve
+        run: |
+          printf '%s\n' '$services = MediaWiki\MediaWikiServices::getInstance(); $loader = $services->getResourceLoader(); $module = $loader->getModule( "ext.monsterEvolution" ); if ( $module === null ) { throw new RuntimeException( "ext.monsterEvolution is not registered." ); } foreach ( $module->getDependencies() as $dependency ) { if ( $loader->getModule( $dependency ) === null ) { throw new RuntimeException( "Unknown ResourceLoader dependency: " . $dependency ); } } print "MonsterEvolution ResourceLoader dependencies resolved.\n";' | php maintenance/eval.php --conf extensions/MonsterEvolution/tests/compatibility/LocalSettings.php
+        working-directory: mediawiki
+
+  release:
+    name: Package and publish release
+    needs:
+      - php-static
+      - javascript
+      - mediawiki-tests
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref_name == github.event.repository.default_branch)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: monster-evolution-release-${{ github.repository }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Select the first unused release version
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          base_version="$(node -p "require('./package.json').version")"
+          extension_version="$(node -p "require('./extension.json').version")"
+
+          if [[ ! "$base_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "package.json version must use numeric MAJOR.MINOR.PATCH format; got: $base_version" >&2
+            exit 1
+          fi
+
+          if [[ "$extension_version" != "$base_version" ]]; then
+            echo "package.json ($base_version) and extension.json ($extension_version) must start at the same version." >&2
+            exit 1
+          fi
+
+          IFS='.' read -r major minor patch <<< "$base_version"
+          candidate="$base_version"
+
+          while git ls-remote --exit-code --tags origin "refs/tags/$candidate" >/dev/null 2>&1; do
+            patch=$((patch + 1))
+            candidate="$major.$minor.$patch"
+          done
+
+          echo "version=$candidate" >> "$GITHUB_OUTPUT"
+          echo "tag=$candidate" >> "$GITHUB_OUTPUT"
+          echo "Selected release version $candidate"
+
+      - name: Build release archive
+        shell: bash
+        env:
+          RELEASE_VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+
+          package_root="build/$EXTENSION_NAME"
+          archive="$EXTENSION_NAME-$RELEASE_VERSION.zip"
+          mkdir -p "$package_root" dist
+
+          node <<'NODE'
+          const fs = require( 'fs' );
+          const path = require( 'path' );
+          const version = process.env.RELEASE_VERSION;
+
+          function updateJson( file, update ) {
+            const target = path.join( process.cwd(), file );
+            const data = JSON.parse( fs.readFileSync( target, 'utf8' ) );
+            update( data );
+            fs.writeFileSync( target, JSON.stringify( data, null, '\t' ) + '\n' );
+          }
+
+          updateJson( 'extension.json', ( data ) => { data.version = version; } );
+          updateJson( 'package.json', ( data ) => { data.version = version; } );
+          updateJson( 'package-lock.json', ( data ) => {
+            data.version = version;
+            if ( data.packages && data.packages[''] ) {
+              data.packages[''].version = version;
+            }
+          } );
+          NODE
+
+          cp -R i18n resources src "$package_root/"
+          cp CHANGELOG.md LICENSE README.md SECURITY.md ServiceWiring.php composer.json extension.json package.json package-lock.json "$package_root/"
+
+          (
+            cd build
+            zip -q -9 -r "../dist/$archive" "$EXTENSION_NAME"
+          )
+          (
+            cd dist
+            sha256sum "$archive" > "$archive.sha256"
+          )
+
+      - name: Verify release archive
+        shell: bash
+        env:
+          RELEASE_VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+
+          archive="dist/$EXTENSION_NAME-$RELEASE_VERSION.zip"
+          unzip -q "$archive" -d build/verify
+          test -f "build/verify/$EXTENSION_NAME/extension.json"
+          test -f "build/verify/$EXTENSION_NAME/ServiceWiring.php"
+          test -f "build/verify/$EXTENSION_NAME/resources/ext.monsterEvolution/evolution.js"
+
+          node -e "const assert=require('assert'); const root='./build/verify/$EXTENSION_NAME/'; assert.equal(require(root+'extension.json').version, process.env.RELEASE_VERSION); assert.equal(require(root+'package.json').version, process.env.RELEASE_VERSION); assert.equal(require(root+'package-lock.json').version, process.env.RELEASE_VERSION);"
+          unzip -t "$archive"
+          sha256sum --check "dist/$EXTENSION_NAME-$RELEASE_VERSION.zip.sha256"
+
+      - name: Upload verified workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MonsterEvolution-${{ steps.version.outputs.version }}
+          path: |
+            dist/MonsterEvolution-${{ steps.version.outputs.version }}.zip
+            dist/MonsterEvolution-${{ steps.version.outputs.version }}.zip.sha256
+          if-no-files-found: error
+
+      - name: Create tag and GitHub release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.version.outputs.tag }}
+          RELEASE_VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add extension.json package.json package-lock.json
+
+          if ! git diff --cached --quiet; then
+            git commit -m "Prepare $EXTENSION_NAME $RELEASE_VERSION"
+          fi
+
+          git tag "$RELEASE_TAG"
+          git push origin "refs/tags/$RELEASE_TAG"
+
+          gh release create "$RELEASE_TAG" \
+            "dist/$EXTENSION_NAME-$RELEASE_VERSION.zip" \
+            "dist/$EXTENSION_NAME-$RELEASE_VERSION.zip.sha256" \
+            --verify-tag \
+            --title "$EXTENSION_NAME $RELEASE_VERSION" \
+            --generate-notes
+
+          {
+            echo "### Published $EXTENSION_NAME $RELEASE_VERSION"
+            echo
+            echo "Tag: \`$RELEASE_TAG\`"
+            echo
+            echo "Archive: \`$EXTENSION_NAME-$RELEASE_VERSION.zip\`"
+          } >> "$GITHUB_STEP_SUMMARY"

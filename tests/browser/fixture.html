@@ -1,0 +1,50 @@
+<!doctype html>
+<html class="client-js" lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width,initial-scale=1">
+	<title>MonsterEvolution browser fixture</title>
+	<link rel="stylesheet" href="../../resources/ext.monsterEvolution/evolution.css">
+	<style>body{font-family:system-ui,sans-serif;margin:1rem;background:#fff;color:#202122}main{max-width:1200px;margin:auto}</style>
+</head>
+<body>
+<main>
+	<h1>MonsterEvolution browser fixture</h1>
+	<div class="mw-monster-evolution mw-monster-evolution--cards mw-monster-evolution--left-to-right" data-direction="left-to-right" data-zoom="true" aria-label="Monster evolution graph">
+		<div class="mw-monster-evolution-controls" role="group" aria-label="Graph zoom controls">
+			<button type="button" class="mw-monster-evolution-control" data-zoom-action="in">Zoom in</button>
+			<button type="button" class="mw-monster-evolution-control" data-zoom-action="out">Zoom out</button>
+			<button type="button" class="mw-monster-evolution-control" data-zoom-action="reset">Reset zoom</button>
+			<button type="button" class="mw-monster-evolution-control" data-zoom-action="fit">Fit graph</button>
+		</div>
+		<div class="mw-monster-evolution-viewport" tabindex="0"><div class="mw-monster-evolution-stage"><div class="mw-monster-evolution-canvas">
+			<svg class="mw-monster-evolution-svg" aria-hidden="true" focusable="false"></svg>
+			<article class="mw-monster-evolution-node" data-node-index="0"><span class="mw-monster-evolution-node-image mw-monster-evolution-node-image--missing" role="img" aria-label="No image is available for Baby Dragon">No image</span><a href="#baby"><span class="mw-monster-evolution-node-name">Baby Dragon</span></a><button type="button" class="mw-monster-evolution-highlight" aria-pressed="false" aria-label="Highlight paths through Baby Dragon">◎</button></article>
+			<article class="mw-monster-evolution-node" data-node-index="1"><span class="mw-monster-evolution-node-name">Dragon</span><details class="mw-monster-evolution-node-details"><summary>More information</summary><div>The normal adult form.</div></details><button type="button" class="mw-monster-evolution-highlight" aria-pressed="false" aria-label="Highlight paths through Dragon">◎</button></article>
+			<article class="mw-monster-evolution-node" data-node-index="2"><span class="mw-monster-evolution-node-name">Fire Dragon</span><button type="button" class="mw-monster-evolution-highlight" aria-pressed="false" aria-label="Highlight paths through Fire Dragon">◎</button></article>
+			<article class="mw-monster-evolution-node" data-node-index="3"><span class="mw-monster-evolution-node-name">Water Dragon</span><button type="button" class="mw-monster-evolution-highlight" aria-pressed="false" aria-label="Highlight paths through Water Dragon">◎</button></article>
+			<article class="mw-monster-evolution-node" data-node-index="4"><span class="mw-monster-evolution-node-name">Ancient Dragon</span><button type="button" class="mw-monster-evolution-highlight" aria-pressed="false" aria-label="Highlight paths through Ancient Dragon">◎</button></article>
+			<article class="mw-monster-evolution-node" data-node-index="5"><span class="mw-monster-evolution-node-name">Dark Dragon</span><button type="button" class="mw-monster-evolution-highlight" aria-pressed="false" aria-label="Highlight paths through Dark Dragon">◎</button></article>
+			<article class="mw-monster-evolution-node" data-node-index="6"><span class="mw-monster-evolution-node-name">Chaos Dragon</span><button type="button" class="mw-monster-evolution-highlight" aria-pressed="false" aria-label="Highlight paths through Chaos Dragon">◎</button></article>
+			<article class="mw-monster-evolution-node" data-node-index="7"><span class="mw-monster-evolution-node-name">Temporary Form</span><button type="button" class="mw-monster-evolution-highlight" aria-pressed="false" aria-label="Highlight paths through Temporary Form">◎</button></article>
+		</div></div></div>
+		<section class="mw-monster-evolution-relationships" aria-label="Evolution relationships"><h3 class="mw-monster-evolution-visually-hidden">Evolution relationships</h3><ul>
+			<li class="mw-monster-evolution-edge mw-monster-evolution-edge--level" data-edge-index="0" data-source="0" data-target="1" data-edge-type="level" data-edge-label="Level 15"><span class="mw-monster-evolution-edge-summary">Baby Dragon evolves into Dragon — Level 15</span></li>
+			<li class="mw-monster-evolution-edge mw-monster-evolution-edge--item" data-edge-index="1" data-source="1" data-target="2" data-edge-type="item" data-edge-label="Fire Crystal"><span class="mw-monster-evolution-edge-summary">Dragon evolves into Fire Dragon — Fire Crystal</span></li>
+			<li class="mw-monster-evolution-edge mw-monster-evolution-edge--item" data-edge-index="2" data-source="1" data-target="3" data-edge-type="item" data-edge-label="Water Crystal"><span class="mw-monster-evolution-edge-summary">Dragon evolves into Water Dragon — Water Crystal</span></li>
+			<li class="mw-monster-evolution-edge mw-monster-evolution-edge--special" data-edge-index="3" data-source="2" data-target="4" data-edge-type="special" data-edge-label="Level 50"><span class="mw-monster-evolution-edge-summary">Fire Dragon evolves into Ancient Dragon — Level 50</span><details class="mw-monster-evolution-condition"><summary>Requirements</summary><ul><li>Level &gt;= 50</li><li>Quest complete</li></ul></details></li>
+			<li class="mw-monster-evolution-edge mw-monster-evolution-edge--special" data-edge-index="4" data-source="3" data-target="4" data-edge-type="special" data-edge-label="Level 50"><span class="mw-monster-evolution-edge-summary">Water Dragon evolves into Ancient Dragon — Level 50</span></li>
+			<li class="mw-monster-evolution-edge mw-monster-evolution-edge--fusion" data-edge-index="5" data-source="2" data-target="6" data-edge-type="fusion" data-edge-label="Fusion"><span class="mw-monster-evolution-edge-summary">Fire Dragon evolves into Chaos Dragon — Fusion</span></li>
+			<li class="mw-monster-evolution-edge mw-monster-evolution-edge--fusion" data-edge-index="6" data-source="5" data-target="6" data-edge-type="fusion" data-edge-label="Fusion"><span class="mw-monster-evolution-edge-summary">Dark Dragon evolves into Chaos Dragon — Fusion</span></li>
+			<li class="mw-monster-evolution-edge mw-monster-evolution-edge--temporary" data-edge-index="7" data-source="6" data-target="7" data-edge-type="temporary" data-edge-label="Transform"><span class="mw-monster-evolution-edge-summary">Chaos Dragon evolves into Temporary Form — Transform</span></li>
+			<li class="mw-monster-evolution-edge mw-monster-evolution-edge--reversible" data-edge-index="8" data-source="7" data-target="6" data-edge-type="reversible" data-edge-label="Revert"><span class="mw-monster-evolution-edge-summary">Temporary Form evolves into Chaos Dragon — Revert</span></li>
+			<li class="mw-monster-evolution-edge mw-monster-evolution-edge--temporary" data-edge-index="9" data-source="7" data-target="7" data-edge-type="temporary" data-edge-label="Refresh"><span class="mw-monster-evolution-edge-summary">Temporary Form evolves into Temporary Form — Refresh</span></li>
+		</ul></section>
+	</div>
+</main>
+<script>
+	window.mw = { hook: function () { return { add: function ( callback ) { callback( document ); } }; } };
+</script>
+<script src="../../resources/ext.monsterEvolution/evolution.js"></script>
+</body>
+</html>

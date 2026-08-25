@@ -1,0 +1,23 @@
+<evolution direction="left-to-right" theme="cards" zoom="true" controls="true">
+[node id="baby" name="Baby Dragon" image="Baby Dragon.png" link="Baby Dragon"]
+[node id="dragon" name="Dragon" image="Dragon.png" link="Dragon" tooltip="The normal adult form."]
+[node id="fire" name="Fire Dragon" image="Fire Dragon.png" link="Fire Dragon"]
+[node id="water" name="Water Dragon" image="Water Dragon.png" link="Water Dragon"]
+[node id="ancient" name="Ancient Dragon" image="Ancient Dragon.png" link="Ancient Dragon"]
+[node id="teen" name="Teen Dragon" link="Teen Dragon"]
+[node id="warrior" name="Warrior Dragon" link="Warrior Dragon"]
+[node id="mystic" name="Mystic Dragon" link="Mystic Dragon"]
+[node id="dark" name="Dark Dragon" image="Dark Dragon.png" link="Dark Dragon"]
+[node id="chaos" name="Chaos Dragon" image="Chaos Dragon.png" link="Chaos Dragon"]
+
+baby -> dragon [type="level" label="Level 15"]
+dragon -> fire [type="item" label="Fire Crystal"]
+dragon -> water [type="item" label="Water Crystal"]
+fire -> ancient [type="special" label="Level 50"]
+water -> ancient [type="special" label="Level 50"]
+dragon -> teen [type="level" label="Level 25"]
+teen -> warrior [type="stat" label="Strength > Magic"]
+teen -> mystic [type="stat" label="Magic >= Strength"]
+fire -> chaos [type="fusion" label="Fusion"]
+dark -> chaos [type="fusion" label="Fusion"]
+</evolution>

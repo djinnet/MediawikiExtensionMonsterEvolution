@@ -1,0 +1,32 @@
+# Changelog
+
+## 1.0.4 — 2026-08-25
+
+- Fixed MediaWiki 1.35 ResourceLoader compatibility by depending on `mediawiki.base` instead of the unavailable `mediawiki` module.
+- Made the enhanced graph viewport shrink to the graph width, up to the available content width, with a transparent outer background.
+- Changed the default visual palette to translucent dark cards and labels with white plain text, connectors, and arrowheads while preserving the wiki's normal link colors.
+- Added gated CI release automation with cross-version verification, ResourceLoader dependency checks, collision-safe patch tags, verified ZIP packaging, SHA-256 checksums, workflow artifacts, and GitHub Releases.
+
+## 1.0.3 — 2026-08-25
+
+- Fixed MediaWiki 1.35 edit previews dropping the graph script module by re-registering graph assets through `OutputPageParserOutput` whenever the parser output contains MonsterEvolution markup.
+- Added parser-output metadata and integration coverage for both ResourceLoader modules.
+
+## 1.0.2 — 2026-08-25
+
+- Fixed client initialization in MediaWiki 1.35 edit previews and other late-loading content contexts.
+- Replaced SVG template strings that MediaWiki 1.35's JavaScript minifier could corrupt, restoring arrows and edge labels.
+- Visually hides the accessible textual relationship list after the enhanced graph initializes.
+- Added a bottom-to-top Awburn branching fixture covering four labeled arrows and five automatically layered nodes.
+
+## 1.0.1 — 2026-08-25
+
+- Backported registration, hook, parser, title, repository, and HTML API usage to MediaWiki 1.35.2 while retaining the PHP 8.1 requirement.
+- Added MediaWiki and PHP platform constraints to extension registration and a local 1.35 compatibility fixture.
+
+## 1.0.0 — 2026-08-25
+
+- Initial release.
+- Added validated tag and parser-function syntaxes, shorthand chains, structured nodes and edges, branching, merging, fusion, reversible edges, cycles, and self-loops.
+- Added MediaWiki-native internal links, file thumbnails, ResourceLoader assets, bounded automatic layout, responsive scrolling, zoom controls, path highlighting, themes, print styles, progressive enhancement, and accessible relationship markup.
+- Added configurable parser limits, localized errors and tracking category, security architecture, adversarial tests, static analysis, and CI metadata.

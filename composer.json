@@ -1,0 +1,36 @@
+{
+	"name": "mediawiki/monster-evolution",
+	"description": "Interactive, accessible evolution graphs for MediaWiki",
+	"type": "mediawiki-extension",
+	"license": "GPL-2.0-or-later",
+	"require": {
+		"php": ">=8.1"
+	},
+	"require-dev": {
+		"mediawiki/mediawiki-codesniffer": "50.0.0",
+		"mediawiki/mediawiki-phan-config": "0.20.0",
+		"mediawiki/minus-x": "2.0.1",
+		"php-parallel-lint/php-console-highlighter": "1.0.0",
+		"php-parallel-lint/php-parallel-lint": "1.4.0"
+	},
+	"scripts": {
+		"unit-standalone": "php tests/run-unit.php",
+		"test": [
+			"parallel-lint . --exclude vendor --exclude node_modules",
+			"@unit-standalone",
+			"phpcs -sp --cache",
+			"minus-x check ."
+		],
+		"fix": [
+			"minus-x fix .",
+			"phpcbf"
+		],
+		"phan": "phan -d . --long-progress-bar --analyze-twice"
+	},
+	"config": {
+		"allow-plugins": {
+			"dealerdirect/phpcodesniffer-composer-installer": true
+		},
+		"sort-packages": true
+	}
+}

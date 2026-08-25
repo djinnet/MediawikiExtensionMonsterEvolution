@@ -1,0 +1,41 @@
+# PHP and Composer dependencies
+/vendor/
+/composer.lock
+
+# JavaScript dependencies and package-manager logs
+/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Test, analysis, and coverage output
+/.phpcs-cache
+/.phpunit.cache/
+/.phpunit.result.cache
+/coverage/
+/clover.xml
+/coverage.xml
+
+# CI release staging and locally generated packages
+/build/
+/dist/
+/*.zip
+/*.sha256
+
+# Local configuration and environment secrets
+/LocalSettings.php
+/.env
+/.env.*
+!/.env.example
+
+# Editor, operating-system, and temporary files
+/.idea/
+/.vscode/
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.log
+*.tmp
+*.swp
+*~

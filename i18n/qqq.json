@@ -1,0 +1,40 @@
+{
+	"@metadata": {
+		"authors": [
+			"MonsterEvolution contributors"
+		]
+	},
+	"monsterevolution-desc": "Extension description shown on Special:Version.",
+	"monsterevolution-graph-label": "Accessible label for an evolution graph.",
+	"monsterevolution-relationships-label": "Heading and accessible label for the semantic list of graph edges.",
+	"monsterevolution-relationship": "Describes a directed edge. $1 is the source monster name; $2 is the target monster name.",
+	"monsterevolution-requirements": "Summary label for a list of evolution requirements.",
+	"monsterevolution-more-information": "Summary label for optional node details.",
+	"monsterevolution-highlight-paths": "Accessible label for a path-highlighting button. $1 is a monster name.",
+	"monsterevolution-zoom-controls": "Accessible label for the group of graph controls.",
+	"monsterevolution-zoom-in": "Button label that increases graph scale.",
+	"monsterevolution-zoom-out": "Button label that decreases graph scale.",
+	"monsterevolution-zoom-reset": "Button label that resets graph scale.",
+	"monsterevolution-zoom-fit": "Button label that fits a graph into its viewport.",
+	"monsterevolution-missing-image": "Image alternative text. $1 is a monster name.",
+	"monsterevolution-missing-image-short": "Short visible placeholder when a file is missing.",
+	"monsterevolution-error": "Generic error wrapper. $1 is a localized error detail.",
+	"monsterevolution-error-line": "Error wrapper. $1 is a source line number; $2 is a localized error detail.",
+	"monsterevolution-error-generic": "Generic parser detail. $1 is a controlled plain-text diagnostic.",
+	"monsterevolution-error-syntax": "Syntax parser detail. $1 is a controlled plain-text diagnostic.",
+	"monsterevolution-error-limit": "Limit parser detail. $1 is a controlled plain-text diagnostic.",
+	"monsterevolution-error-option": "Graph-option detail. $1 is a controlled plain-text diagnostic.",
+	"monsterevolution-error-input-limit": "Error shown when one definition exceeds its configured byte limit.",
+	"monsterevolution-error-node-limit": "Error shown when a graph has too many nodes.",
+	"monsterevolution-error-edge-limit": "Error shown when a graph has too many directed edges.",
+	"monsterevolution-error-condition-limit": "Error shown when one edge has too many conditions.",
+	"monsterevolution-error-graph-limit": "Error shown when one parser invocation contains too many graphs.",
+	"monsterevolution-error-empty": "Error shown for an empty graph.",
+	"monsterevolution-error-duplicate-node": "Error for a duplicate ID. $1 is the rejected ID.",
+	"monsterevolution-error-unknown-node": "Error for an unknown endpoint. $1 is the rejected ID.",
+	"monsterevolution-error-invalid-id": "Error for an invalid ID. $1 is the rejected ID.",
+	"monsterevolution-error-invalid-link": "Error for a link value that looks like an external or executable URL.",
+	"monsterevolution-error-invalid-image": "Error for a value that is not a safe local file title.",
+	"monsterevolution-error-unknown-attribute": "Error for a non-whitelisted attribute. $1 is its name.",
+	"monsterevolution-error-category": "Tracking category name for pages containing invalid graphs. Do not include the namespace prefix."
+}

@@ -1,0 +1,40 @@
+{
+	"@metadata": {
+		"authors": [
+			"MonsterEvolution contributors"
+		]
+	},
+	"monsterevolution-desc": "Displays interactive, accessible monster evolution graphs",
+	"monsterevolution-graph-label": "Monster evolution graph",
+	"monsterevolution-relationships-label": "Evolution relationships",
+	"monsterevolution-relationship": "$1 evolves into $2",
+	"monsterevolution-requirements": "Requirements",
+	"monsterevolution-more-information": "More information",
+	"monsterevolution-highlight-paths": "Highlight paths through $1",
+	"monsterevolution-zoom-controls": "Graph zoom controls",
+	"monsterevolution-zoom-in": "Zoom in",
+	"monsterevolution-zoom-out": "Zoom out",
+	"monsterevolution-zoom-reset": "Reset zoom",
+	"monsterevolution-zoom-fit": "Fit graph",
+	"monsterevolution-missing-image": "No image is available for $1",
+	"monsterevolution-missing-image-short": "No image",
+	"monsterevolution-error": "Monster Evolution error: $1",
+	"monsterevolution-error-line": "Monster Evolution error on line $1: $2",
+	"monsterevolution-error-generic": "$1",
+	"monsterevolution-error-syntax": "$1",
+	"monsterevolution-error-limit": "$1",
+	"monsterevolution-error-option": "$1",
+	"monsterevolution-error-input-limit": "The evolution definition is too large.",
+	"monsterevolution-error-node-limit": "The evolution graph has too many nodes.",
+	"monsterevolution-error-edge-limit": "The evolution graph has too many connections.",
+	"monsterevolution-error-condition-limit": "An evolution has too many conditions.",
+	"monsterevolution-error-graph-limit": "This page has too many evolution graphs.",
+	"monsterevolution-error-empty": "The evolution graph contains no nodes.",
+	"monsterevolution-error-duplicate-node": "Duplicate node ID “$1”.",
+	"monsterevolution-error-unknown-node": "Unknown node “$1”.",
+	"monsterevolution-error-invalid-id": "Invalid node ID “$1”.",
+	"monsterevolution-error-invalid-link": "External and executable links are not allowed.",
+	"monsterevolution-error-invalid-image": "Images must be local MediaWiki file names.",
+	"monsterevolution-error-unknown-attribute": "Unknown attribute “$1”.",
+	"monsterevolution-error-category": "Pages with Monster Evolution errors"
+}

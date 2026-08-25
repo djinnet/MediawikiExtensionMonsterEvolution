@@ -1,0 +1,140 @@
+{
+	"manifest_version": 2,
+	"name": "MonsterEvolution",
+	"version": "1.0.4",
+	"author": [
+		"MonsterEvolution contributors"
+	],
+	"url": "https://www.mediawiki.org/wiki/Extension:MonsterEvolution",
+	"descriptionmsg": "monsterevolution-desc",
+	"license-name": "GPL-2.0-or-later",
+	"type": "parserhook",
+	"callback": "MediaWiki\\Extension\\MonsterEvolution\\Registration::validate",
+	"requires": {
+		"MediaWiki": ">= 1.35.2",
+		"platform": {
+			"php": ">= 8.1.0"
+		}
+	},
+	"AutoloadNamespaces": {
+		"MediaWiki\\Extension\\MonsterEvolution\\": "src/"
+	},
+	"TestAutoloadNamespaces": {
+		"MediaWiki\\Extension\\MonsterEvolution\\Tests\\": "tests/phpunit/"
+	},
+	"ServiceWiringFiles": [
+		"ServiceWiring.php"
+	],
+	"Hooks": {
+		"ParserFirstCallInit": "main",
+		"OutputPageParserOutput": "main"
+	},
+	"HookHandlers": {
+		"main": {
+			"class": "MediaWiki\\Extension\\MonsterEvolution\\Hooks\\ParserHooks",
+			"services": [
+				"MonsterEvolution.Parser",
+				"MonsterEvolution.Renderer",
+				"MonsterEvolution.Limits",
+				"MainConfig"
+			]
+		}
+	},
+	"MessagesDirs": {
+		"MonsterEvolution": [
+			"i18n"
+		]
+	},
+	"ExtensionMessagesFiles": {
+		"MonsterEvolutionMagic": "i18n/MagicWords.php"
+	},
+	"ResourceModules": {
+		"ext.monsterEvolution.styles": {
+			"localBasePath": "resources/ext.monsterEvolution",
+			"remoteExtPath": "MonsterEvolution/resources/ext.monsterEvolution",
+			"styles": [
+				"evolution.css"
+			],
+			"targets": [
+				"desktop",
+				"mobile"
+			]
+		},
+		"ext.monsterEvolution": {
+			"localBasePath": "resources/ext.monsterEvolution",
+			"remoteExtPath": "MonsterEvolution/resources/ext.monsterEvolution",
+			"scripts": [
+				"evolution.js"
+			],
+			"dependencies": [
+				"mediawiki.base"
+			],
+			"targets": [
+				"desktop",
+				"mobile"
+			]
+		}
+	},
+	"config": {
+		"MonsterEvolutionDefaultDirection": {
+			"value": "left-to-right",
+			"description": "Default graph direction."
+		},
+		"MonsterEvolutionDefaultTheme": {
+			"value": "default",
+			"description": "Default graph theme."
+		},
+		"MonsterEvolutionDefaultImageWidth": {
+			"value": 96,
+			"description": "Default thumbnail width in pixels."
+		},
+		"MonsterEvolutionDefaultImageHeight": {
+			"value": 96,
+			"description": "Default thumbnail height in pixels."
+		},
+		"MonsterEvolutionMaxInputBytes": {
+			"value": 131072,
+			"description": "Maximum UTF-8 input size per graph."
+		},
+		"MonsterEvolutionMaxNodes": {
+			"value": 250,
+			"description": "Maximum nodes per graph."
+		},
+		"MonsterEvolutionMaxEdges": {
+			"value": 500,
+			"description": "Maximum edges per graph."
+		},
+		"MonsterEvolutionMaxConditionsPerEdge": {
+			"value": 20,
+			"description": "Maximum structured conditions per edge."
+		},
+		"MonsterEvolutionMaxAttributes": {
+			"value": 32,
+			"description": "Maximum attributes on one declaration."
+		},
+		"MonsterEvolutionMaxValueLength": {
+			"value": 4096,
+			"description": "Maximum Unicode characters in one value."
+		},
+		"MonsterEvolutionMaxNodeIdLength": {
+			"value": 128,
+			"description": "Maximum ASCII characters in a node ID."
+		},
+		"MonsterEvolutionMaxGraphsPerPage": {
+			"value": 20,
+			"description": "Maximum graphs in one parser invocation."
+		},
+		"MonsterEvolutionEnableZoom": {
+			"value": true,
+			"description": "Allow editors to enable client-side zoom controls."
+		},
+		"MonsterEvolutionMissingImage": {
+			"value": "",
+			"description": "Optional local MediaWiki file used when a requested image is missing."
+		},
+		"MonsterEvolutionEnableTrackingCategory": {
+			"value": true,
+			"description": "Add the localized error tracking category on invalid graphs."
+		}
+	}
+}

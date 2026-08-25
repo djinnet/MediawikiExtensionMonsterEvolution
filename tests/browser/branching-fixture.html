@@ -1,0 +1,32 @@
+<!doctype html>
+<html class="client-js" lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width,initial-scale=1">
+	<title>MonsterEvolution bottom-to-top branching fixture</title>
+	<link rel="stylesheet" href="../../resources/ext.monsterEvolution/evolution.css">
+	<style>body{font-family:system-ui,sans-serif;margin:1rem;background:linear-gradient(135deg,#56708c,#d0b78c);color:#202122}main{max-width:1200px;margin:auto}</style>
+</head>
+<body>
+<main>
+	<div class="mw-monster-evolution mw-monster-evolution--default mw-monster-evolution--bottom-to-top" data-direction="bottom-to-top" data-zoom="false" aria-label="Monster evolution graph">
+		<div class="mw-monster-evolution-viewport" tabindex="0"><div class="mw-monster-evolution-stage"><div class="mw-monster-evolution-canvas">
+			<svg class="mw-monster-evolution-svg" aria-hidden="true" focusable="false"></svg>
+			<article class="mw-monster-evolution-node" data-node-index="0"><span class="mw-monster-evolution-node-name">Awburn</span><button type="button" class="mw-monster-evolution-highlight" aria-pressed="false" aria-label="Highlight paths through Awburn">◎</button></article>
+			<article class="mw-monster-evolution-node" data-node-index="1"><span class="mw-monster-evolution-node-name">Kainite</span><button type="button" class="mw-monster-evolution-highlight" aria-pressed="false" aria-label="Highlight paths through Kainite">◎</button></article>
+			<article class="mw-monster-evolution-node" data-node-index="2"><span class="mw-monster-evolution-node-name">Embear</span><button type="button" class="mw-monster-evolution-highlight" aria-pressed="false" aria-label="Highlight paths through Embear">◎</button></article>
+			<article class="mw-monster-evolution-node" data-node-index="3"><span class="mw-monster-evolution-node-name">Unknown Kinfolk</span><button type="button" class="mw-monster-evolution-highlight" aria-pressed="false" aria-label="Highlight paths through Unknown Kinfolk">◎</button></article>
+			<article class="mw-monster-evolution-node" data-node-index="4"><span class="mw-monster-evolution-node-name">Unknown Kinfolk</span><button type="button" class="mw-monster-evolution-highlight" aria-pressed="false" aria-label="Highlight paths through Unknown Kinfolk">◎</button></article>
+		</div></div></div>
+		<section class="mw-monster-evolution-relationships" aria-label="Evolution relationships"><h3 class="mw-monster-evolution-visually-hidden">Evolution relationships</h3><ul>
+			<li class="mw-monster-evolution-edge" data-edge-index="0" data-source="0" data-target="1" data-edge-type="level" data-edge-label="Level up"><span>Awburn evolves into Kainite — Level up</span></li>
+			<li class="mw-monster-evolution-edge" data-edge-index="1" data-source="0" data-target="2" data-edge-type="level" data-edge-label="Level up"><span>Awburn evolves into Embear — Level up</span></li>
+			<li class="mw-monster-evolution-edge" data-edge-index="2" data-source="2" data-target="3" data-edge-type="special" data-edge-label="Cinder PA"><span>Embear evolves into Unknown Kinfolk — Cinder PA</span></li>
+			<li class="mw-monster-evolution-edge" data-edge-index="3" data-source="2" data-target="4" data-edge-type="level" data-edge-label="Level up"><span>Embear evolves into Unknown Kinfolk — Level up</span></li>
+		</ul></section>
+	</div>
+</main>
+<script>window.mw={hook:function(){return{add:function(){}}}};</script>
+<script src="../../resources/ext.monsterEvolution/evolution.js"></script>
+</body>
+</html>
