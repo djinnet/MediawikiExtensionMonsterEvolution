@@ -235,7 +235,10 @@ jobs:
 
           node -e "const assert=require('assert'); const root='./build/verify/$EXTENSION_NAME/'; assert.equal(require(root+'extension.json').version, process.env.RELEASE_VERSION); assert.equal(require(root+'package.json').version, process.env.RELEASE_VERSION); assert.equal(require(root+'package-lock.json').version, process.env.RELEASE_VERSION);"
           unzip -t "$archive"
-          sha256sum --check "dist/$EXTENSION_NAME-$RELEASE_VERSION.zip.sha256"
+          (
+            cd dist
+            sha256sum --check "$EXTENSION_NAME-$RELEASE_VERSION.zip.sha256"
+          )
 
       - name: Upload verified workflow artifact
         uses: actions/upload-artifact@v4
