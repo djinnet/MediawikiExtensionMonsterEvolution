@@ -1,6 +1,6 @@
 {
 	"name": "mediawiki-extension-monster-evolution",
-	"version": "1.0.4",
+	"version": "1.0.5",
 	"private": true,
 	"description": "Static checks for MonsterEvolution ResourceLoader code",
 	"scripts": {
