@@ -25,7 +25,7 @@
 		edgeElements.forEach( ( edgeElement ) => {
 			const source = numberAttribute( edgeElement, 'data-source' );
 			const target = numberAttribute( edgeElement, 'data-target' );
-			if ( source < nodes.length && target < nodes.length ) {
+			if ( source >= 0 && target >= 0 && source < nodes.length && target < nodes.length ) {
 				edges.push( {
 					source,
 					target,
@@ -174,18 +174,41 @@
 				position.y = height - margin - sizes[ node ].height - ( position.y - margin );
 			} );
 		}
+		const maximumSelfLoops = Math.max( 0, ...graph.outgoing.map( ( relations, node ) =>
+			relations.filter( ( relation ) => relation.node === node ).length
+		) );
+		if ( maximumSelfLoops > 0 ) {
+			const clearance = 72 + ( maximumSelfLoops - 1 ) * 16;
+			if ( horizontal ) {
+				width += clearance;
+			} else {
+				height += clearance;
+			}
+		}
 		return { positions, width, height, horizontal };
 	}
 
-	function edgePath( source, target, sourceSize, targetSize, horizontal, offset, outerLane ) {
+	function edgePath( source, target, sourceSize, targetSize, horizontal, offset, outerLane, loopOffset ) {
 		if ( source === target ) {
-			const x = source.x + sourceSize.width;
-			const y = source.y + sourceSize.height / 2;
+			if ( horizontal ) {
+				const x = source.x + sourceSize.width;
+				const y = source.y + sourceSize.height / 2;
+				const extent = 56 + loopOffset;
+				return {
+					path: 'M ' + x + ' ' + y + ' C ' + ( x + extent ) + ' ' + ( y - 62 ) +
+						', ' + ( x + extent ) + ' ' + ( y + 62 ) + ', ' + x + ' ' + ( y + 5 ),
+					labelX: x + 48 + loopOffset,
+					labelY: y - 48
+				};
+			}
+			const x = source.x + sourceSize.width / 2;
+			const y = source.y + sourceSize.height;
+			const extent = 56 + loopOffset;
 			return {
-				path: 'M ' + x + ' ' + y + ' C ' + ( x + 56 ) + ' ' + ( y - 62 ) +
-					', ' + ( x + 56 ) + ' ' + ( y + 62 ) + ', ' + x + ' ' + ( y + 5 ),
+				path: 'M ' + x + ' ' + y + ' C ' + ( x - 62 ) + ' ' + ( y + extent ) +
+					', ' + ( x + 62 ) + ' ' + ( y + extent ) + ', ' + ( x + 5 ) + ' ' + y,
 				labelX: x + 48,
-				labelY: y - 48
+				labelY: y + 48 + loopOffset
 			};
 		}
 		const sourceCenter = {
@@ -270,9 +293,20 @@
 		svg.setAttribute( 'height', String( layout.height ) );
 
 		const pairs = new Set( data.edges.map( ( edge ) => edge.source + ':' + edge.target ) );
+		const parallelCounts = new Map();
+		const parallelSeen = new Map();
+		data.edges.forEach( ( edge ) => {
+			const key = edge.source + ':' + edge.target;
+			parallelCounts.set( key, ( parallelCounts.get( key ) || 0 ) + 1 );
+		} );
 		data.edges.forEach( ( edge, edgeIndex ) => {
+			const key = edge.source + ':' + edge.target;
+			const occurrence = parallelSeen.get( key ) || 0;
+			parallelSeen.set( key, occurrence + 1 );
+			const parallelCount = parallelCounts.get( key ) || 1;
 			const reverse = edge.source !== edge.target && pairs.has( edge.target + ':' + edge.source );
-			const offset = reverse ? ( edge.source < edge.target ? -14 : 14 ) : 0;
+			const parallelOffset = ( occurrence - ( parallelCount - 1 ) / 2 ) * 18;
+			const offset = parallelOffset + ( reverse ? ( edge.source < edge.target ? -14 : 14 ) : 0 );
 			const geometry = edgePath(
 				layout.positions[ edge.source ],
 				layout.positions[ edge.target ],
@@ -280,7 +314,8 @@
 				sizes[ edge.target ],
 				layout.horizontal,
 				offset,
-				18 + ( edgeIndex % 3 ) * 10
+				18 + ( edgeIndex % 3 ) * 10,
+				occurrence * 16
 			);
 			const path = element( 'path', {
 				d: geometry.path,
@@ -294,6 +329,7 @@
 				label.className = 'mw-monster-evolution-edge-label';
 				label.setAttribute( 'data-edge-index', String( edgeIndex ) );
 				label.textContent = edge.label;
+				label.title = edge.label;
 				label.style.left = geometry.labelX + 'px';
 				label.style.top = geometry.labelY + 'px';
 				canvas.appendChild( label );

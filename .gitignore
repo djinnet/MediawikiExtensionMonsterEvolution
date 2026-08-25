@@ -16,6 +16,7 @@ pnpm-debug.log*
 /coverage/
 /clover.xml
 /coverage.xml
+/browser-results-*.html
 
 # CI release staging and locally generated packages
 /build/

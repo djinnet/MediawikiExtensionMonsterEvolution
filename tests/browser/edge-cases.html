@@ -1,0 +1,49 @@
+<!doctype html>
+<html class="client-js" lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width,initial-scale=1">
+	<title>MonsterEvolution edge-case browser tests</title>
+	<link rel="stylesheet" href="../../resources/ext.monsterEvolution/evolution.css">
+	<style>
+		body { margin: 1rem; background: #fff; color: #202122; font-family: system-ui, sans-serif; }
+		main { max-width: 76rem; margin: auto; }
+		#results { padding: 0.75rem 1rem; border: 2px solid #72777d; }
+		#results[data-test-status='passed'] { border-color: #14866d; }
+		#results[data-test-status='failed'] { border-color: #d33; }
+		.fixture-case { margin-block: 1.5rem; padding: 0.5rem; background: linear-gradient( 135deg, #fff, #d8e4f0 ); }
+	</style>
+</head>
+<body>
+<main>
+	<h1>MonsterEvolution edge-case browser tests</h1>
+	<section id="results" data-test-status="running" aria-live="polite">
+		<strong>Running browser assertions…</strong>
+		<ul></ul>
+	</section>
+	<div id="fixtures"></div>
+</main>
+<script>
+	window.monsterEvolutionHookCallbacks = [];
+	window.mw = {
+		hook: function () {
+			return {
+				add: function ( callback ) {
+					window.monsterEvolutionHookCallbacks.push( callback );
+				}
+			};
+		}
+	};
+</script>
+<script src="edge-cases.js"></script>
+<script src="../../resources/ext.monsterEvolution/evolution.js"></script>
+<script>
+	window.monsterEvolutionHookCallbacks.forEach( function ( callback ) {
+		callback( document );
+	} );
+	window.requestAnimationFrame( function () {
+		window.requestAnimationFrame( window.runMonsterEvolutionEdgeCases );
+	} );
+</script>
+</body>
+</html>

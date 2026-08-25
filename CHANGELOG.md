@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- Expanded the standalone parser and security suite from 32 to 140 assertions, covering option aliases, all directions and themes, Boolean and dimension boundaries, multiline declarations, metadata, Unicode character limits, malformed syntax, source-line reporting, condition and attribute limits, and graph-model edge cases.
+- Added a dependency-free browser regression fixture with more than 100 layout, direction, interaction, responsive, theme, malformed-metadata, cycle, reciprocal-edge, parallel-edge, and self-loop assertions, and made it part of GitHub Actions through headless Chrome.
+- Ignored invalid negative client edge indexes instead of allowing malformed relationship metadata to interrupt enhancement.
+- Separated repeated transitions and repeated self-loops so their curves and labels no longer render directly on top of one another.
+- Reserved canvas space for self-loop arrows and labels, and added a subtle contrast shadow so white connectors remain visible on light wiki backgrounds.
+
 ## 1.0.4 — 2026-08-25
 
 - Fixed MediaWiki 1.35 ResourceLoader compatibility by depending on `mediawiki.base` instead of the unavailable `mediawiki` module.

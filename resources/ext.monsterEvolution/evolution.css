@@ -158,11 +158,13 @@
 	fill: none;
 	stroke: var( --monster-evolution-edge );
 	stroke-width: 2;
+	filter: drop-shadow( 0 0 1px rgba( 0, 0, 0, 0.9 ) );
 	vector-effect: non-scaling-stroke;
 }
 
 .mw-monster-evolution-svg marker path {
 	fill: var( --monster-evolution-edge );
+	filter: drop-shadow( 0 0 1px rgba( 0, 0, 0, 0.9 ) );
 }
 
 .mw-monster-evolution-edge-path--fusion {

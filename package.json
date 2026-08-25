@@ -4,7 +4,7 @@
 	"private": true,
 	"description": "Static checks for MonsterEvolution ResourceLoader code",
 	"scripts": {
-		"test": "node --check resources/ext.monsterEvolution/evolution.js && node tests/security/static-check.js"
+		"test": "node --check resources/ext.monsterEvolution/evolution.js && node --check tests/browser/edge-cases.js && node tests/security/static-check.js"
 	},
 	"engines": {
 		"node": ">=20"

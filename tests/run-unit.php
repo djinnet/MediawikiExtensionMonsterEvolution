@@ -36,6 +36,26 @@ $expectError = static function ( callable $callback, string $message ) use ( $as
 	}
 };
 
+$expectErrorDetails = static function (
+	callable $callback,
+	string $message,
+	?string $messageKey = null,
+	?int $line = null
+) use ( $assert ): void {
+	try {
+		$callback();
+		$assert( false, $message );
+	} catch ( EvolutionParseException $exception ) {
+		$assert( true, $message );
+		if ( $messageKey !== null ) {
+			$assert( $exception->messageKey === $messageKey, "$message uses the expected message key." );
+		}
+		if ( $line !== null ) {
+			$assert( $exception->sourceLine === $line, "$message reports the expected source line." );
+		}
+	}
+};
+
 $parser = new EvolutionParser( new EvolutionLimits() );
 $linear = $parser->parse( 'Slime -> Big Slime -> King Slime' );
 $assert( count( $linear->getNodes() ) === 3, 'Linear shorthand creates three nodes.' );
@@ -64,10 +84,240 @@ $assert( $reversible->getEdges()[1]->type === 'reversible', 'Reverse edge has a 
 $unicode = $parser->parse( '[node id="dragon" name="火竜 🐉" tooltip="é form"]' );
 $assert( $unicode->getNodes()['dragon']->name === '火竜 🐉', 'Unicode display text survives validation.' );
 
+$duplicates = $parser->parse( "A -> B\nA -> C\nB -> A" );
+$assert( count( $duplicates->getNodes() ) === 3, 'Repeated shorthand names reuse one node.' );
+$assert( $duplicates->getEdges()[2]->target === 'auto-1', 'Repeated shorthand endpoints keep stable IDs.' );
+
+$caseSensitive = $parser->parse( 'Slime -> slime' );
+$assert( count( $caseSensitive->getNodes() ) === 2, 'Shorthand names remain Unicode case-sensitive.' );
+
+$chainMetadata = $parser->parse( 'A -> B <-> C [type="quest" label="Clear dungeon" conditions="Key; Boss"]' );
+$assert( count( $chainMetadata->getEdges() ) === 3, 'Mixed-operator chains create every directed edge.' );
+foreach ( $chainMetadata->getEdges() as $edge ) {
+	$assert( $edge->type === 'quest', 'Chain metadata is applied consistently to each generated edge.' );
+	$assert( $edge->label === 'Clear dungeon', 'Chain labels are applied consistently.' );
+	$assert( count( $edge->conditions ) === 2, 'Chain conditions are applied consistently.' );
+}
+
+$nodeMetadata = $parser->parse(
+	'[node id="meta" name="Meta" image="Creature portrait.png" link="Help:Creature" ' .
+	'subtitle="Rare" form="Night" tooltip="Line one\\nLine two" class="Boss FIRE_2" ' .
+	'imageWidth="16" imageHeight="512"]'
+);
+$metadataNode = $nodeMetadata->getNodes()['meta'];
+$assert( $metadataNode->image === 'Creature portrait.png', 'Safe local file names are retained.' );
+$assert( $metadataNode->link === 'Help:Creature', 'Internal namespace links are retained.' );
+$assert( $metadataNode->classes === [ 'boss', 'fire_2' ], 'Custom classes are normalized to lowercase.' );
+$assert( $metadataNode->imageWidth === 16, 'Minimum per-node image width is accepted.' );
+$assert( $metadataNode->imageHeight === 512, 'Maximum per-node image height is accepted.' );
+$assert( $metadataNode->tooltip === "Line one\nLine two", 'Escaped tooltip newlines are decoded.' );
+
+foreach ( [
+	'left-to-right', 'right-to-left', 'top-to-bottom', 'bottom-to-top',
+] as $direction ) {
+	$graph = $parser->parse( 'A -> B', [ 'direction' => strtoupper( $direction ) ] );
+	$assert( $graph->direction === $direction, "Direction $direction is accepted case-insensitively." );
+}
+$assert(
+	$parser->parse( 'A -> B', [ 'direction' => 'horizontal' ] )->direction === 'left-to-right',
+	'Horizontal direction alias is normalized.'
+);
+$assert(
+	$parser->parse( 'A -> B', [ 'direction' => 'vertical' ] )->direction === 'top-to-bottom',
+	'Vertical direction alias is normalized.'
+);
+foreach ( [ 'default', 'compact', 'cards', 'minimal' ] as $theme ) {
+	$graph = $parser->parse( 'A -> B', [ 'theme' => strtoupper( $theme ) ] );
+	$assert( $graph->theme === $theme, "Theme $theme is accepted case-insensitively." );
+}
+
+foreach ( [ '1', 'true', 'TRUE', 'yes', ' YES ' ] as $truthy ) {
+	$assert( $parser->parse( 'A -> B', [ 'zoom' => $truthy ] )->zoom, "Boolean $truthy is true." );
+}
+foreach ( [ '0', 'false', 'FALSE', 'no', ' NO ' ] as $falsey ) {
+	$assert( !$parser->parse( 'A -> B', [ 'zoom' => $falsey ] )->zoom, "Boolean $falsey is false." );
+}
+$controlsWithoutZoom = $parser->parse( 'A -> B', [ 'controls' => 'true', 'zoom' => 'false' ] );
+$assert( !$controlsWithoutZoom->controls, 'Controls remain disabled when graph zoom is disabled.' );
+
+$tagDimensions = $parser->parse( 'A -> B', [ 'imageWidth' => '16', 'IMAGEHEIGHT' => '512' ] );
+$assert( $tagDimensions->defaultImageWidth === 16, 'Minimum graph image width is accepted.' );
+$assert( $tagDimensions->defaultImageHeight === 512, 'Maximum graph image height is accepted.' );
+
+$multiline = $parser->parse( <<<'WIKI'
+[node
+ id="a"
+ name="Quoted \"Alpha\""
+ subtitle='single quoted value'
+]
+[node id="b" name="B"]
+
+a -> b [
+ label="Line one\nLine two"
+ conditions="First;
+Second;;"
+]
+WIKI );
+$assert( $multiline->getNodes()['a']->name === 'Quoted "Alpha"', 'Escaped quotes survive multiline declarations.' );
+$assert( $multiline->getNodes()['a']->subtitle === 'single quoted value', 'Single-quoted attributes are accepted.' );
+$assert( $multiline->getEdges()[0]->label === "Line one\nLine two", 'Escaped edge-label newlines are decoded.' );
+$assert( count( $multiline->getEdges()[0]->conditions ) === 2, 'Blank structured conditions are ignored.' );
+
+$crlf = $parser->parse( "A -> B\r\nB -> C\r\n" );
+$assert( count( $crlf->getEdges() ) === 2, 'CRLF source is normalized correctly.' );
+
+$isolated = $parser->parse( '[node id="alone" name="Alone"]' );
+$assert( count( $isolated->getNodes() ) === 1, 'An explicitly declared isolated node is valid.' );
+$assert( count( $isolated->getEdges() ) === 0, 'An isolated node does not invent relationships.' );
+
 $expectError(
 	static fn () => $parser->parse( '[node id="a" name="A"]' . "\n" . 'a -> typo' ),
 	'Unknown explicit endpoints are rejected.'
 );
+
+foreach ( [
+	'' => '',
+	'space' => 'bad id',
+	'dot' => 'bad.id',
+	'unicode' => 'drágon',
+	'slash' => 'bad/id',
+	'too long' => str_repeat( 'a', 129 ),
+] as $label => $id ) {
+	$expectError(
+		static fn () => $parser->parse( '[node id="' . $id . '" name="A"]' ),
+		"Invalid node ID is rejected: $label"
+	);
+}
+$boundaryId = str_repeat( 'a', 128 );
+$assert(
+	isset( $parser->parse( '[node id="' . $boundaryId . '" name="A"]' )->getNodes()[$boundaryId] ),
+	'Maximum-length node ID is accepted.'
+);
+
+foreach ( [ '1bad', '-bad', 'bad token', 'bad.dot', str_repeat( 'a', 33 ) ] as $type ) {
+	$expectError(
+		static fn () => $parser->parse( 'A -> B [type="' . $type . '"]' ),
+		"Invalid semantic edge type is rejected: $type"
+	);
+}
+$assert(
+	$parser->parse( 'A -> B [type="a_b-2"]' )->getEdges()[0]->type === 'a_b-2',
+	'Valid semantic type punctuation is accepted.'
+);
+
+$nineClasses = implode( ' ', array_map( static fn ( int $index ): string => "c$index", range( 1, 9 ) ) );
+$expectError(
+	static fn () => $parser->parse( '[node id="x" name="A" class="' . $nineClasses . '"]' ),
+	'More than eight custom classes are rejected.'
+);
+
+foreach ( [ '15', '513', '-1', '16.5', '512px', '1000' ] as $dimension ) {
+	$expectError(
+		static fn () => $parser->parse( 'A -> B', [ 'imageWidth' => $dimension ] ),
+		"Invalid image dimension is rejected: $dimension"
+	);
+}
+$assert(
+	$parser->parse( 'A -> B', [ 'imageWidth' => '016' ] )->defaultImageWidth === 16,
+	'Zero-padded dimensions are normalized to integers.'
+);
+foreach ( [ 'on', 'off', '2', '', 'null' ] as $boolean ) {
+	$expectError(
+		static fn () => $parser->parse( 'A -> B', [ 'zoom' => $boolean ] ),
+		"Invalid Boolean is rejected: $boolean"
+	);
+}
+
+foreach ( [
+	[ [ 'direction' => 'diagonal' ], 'invalid direction', 'monsterevolution-error-option' ],
+	[ [ 'theme' => 'neon' ], 'invalid theme', 'monsterevolution-error-option' ],
+	[ [ 'style' => 'display:none' ], 'unknown graph attribute', 'monsterevolution-error-unknown-attribute' ],
+] as [ $options, $label, $messageKey ] ) {
+	$expectErrorDetails(
+		static fn () => $parser->parse( 'A -> B', $options ),
+		"Graph option error is controlled: $label",
+		$messageKey
+	);
+}
+$expectError(
+	static fn () => $parser->parse( 'A -> B', [ 'theme' => 'default', 'THEME' => 'cards' ] ),
+	'Case-insensitive duplicate graph attributes are rejected.'
+);
+
+foreach ( [
+	'empty graph' => '',
+	'only whitespace' => " \n\t ",
+	'missing target' => 'A ->',
+	'missing source' => '-> B',
+	'wrong arrow' => 'A => B',
+	'unexpected closing bracket' => 'A -> B]',
+	'nested bracket' => 'A -> B [label="x" [type="level"]]',
+	'unterminated bracket' => 'A -> B [label="x"',
+	'unterminated quote' => 'A -> B [label="x]',
+	'unquoted attribute' => 'A -> B [label=bad]',
+	'trailing text' => 'A -> B [label="x"] trailing',
+] as $label => $source ) {
+	$expectError( static fn () => $parser->parse( $source ), "Malformed syntax is rejected: $label" );
+}
+
+$expectErrorDetails(
+	static fn () => $parser->parse( "A -> B\n[node id=\"bad id\" name=\"Bad\"]" ),
+	'Errors retain the declaration source line.',
+	'monsterevolution-error-invalid-id',
+	2
+);
+
+$expectError(
+	static fn () => $parser->parse( "[node id=\"x\" name=\"A\"]\nx -> x [unknown=\"value\"]" ),
+	'Unknown edge attributes are rejected.'
+);
+
+$invalidUtf8 = "[node id=\"x\" name=\"\xC3\x28\"]";
+$expectError( static fn () => $parser->parse( $invalidUtf8 ), 'Invalid UTF-8 input is rejected.' );
+
+$zeroConditionParser = new EvolutionParser( new EvolutionLimits( maxConditionsPerEdge: 0 ) );
+$assert(
+	count( $zeroConditionParser->parse( 'A -> B [conditions=";;"]' )->getEdges()[0]->conditions ) === 0,
+	'A zero condition limit allows an empty condition list.'
+);
+$expectError(
+	static fn () => $zeroConditionParser->parse( 'A -> B [conditions="Required"]' ),
+	'A zero condition limit rejects the first real condition.'
+);
+
+$attributeLimitedParser = new EvolutionParser( new EvolutionLimits( maxAttributes: 2 ) );
+$assert(
+	count( $attributeLimitedParser->parse( '[node id="x" name="A"]' )->getNodes() ) === 1,
+	'The exact attribute-count limit is accepted.'
+);
+$expectError(
+	static fn () => $attributeLimitedParser->parse( '[node id="x" name="A" subtitle="Too many"]' ),
+	'Maximum plus one attribute is rejected.'
+);
+
+$valueLimitedParser = new EvolutionParser( new EvolutionLimits( maxValueLength: 4 ) );
+$assert(
+	$valueLimitedParser->parse( '[node id="x" name="🐉🐉🐉🐉"]' )->getNodes()['x']->name === '🐉🐉🐉🐉',
+	'Value limits count Unicode characters rather than bytes.'
+);
+$expectError(
+	static fn () => $valueLimitedParser->parse( '[node id="x" name="🐉🐉🐉🐉🐉"]' ),
+	'Maximum plus one Unicode character is rejected.'
+);
+
+foreach ( [
+	static fn () => new EvolutionLimits( maxInputBytes: 0 ),
+	static fn () => new EvolutionLimits( maxNodes: 0 ),
+	static fn () => new EvolutionLimits( maxEdges: 0 ),
+	static fn () => new EvolutionLimits( maxConditionsPerEdge: -1 ),
+] as $index => $callback ) {
+	try {
+		$callback();
+		$assert( false, "Invalid limit set $index is rejected." );
+	} catch ( InvalidArgumentException ) {
+		$assert( true, "Invalid limit set $index is rejected." );
+	}
+}
 $expectError(
 	static fn () => $parser->parse( '[node id="x" name="A"]' . "\n" . '[node id="x" name="B"]' ),
 	'Duplicate IDs are rejected.'

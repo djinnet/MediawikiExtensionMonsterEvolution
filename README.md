@@ -245,6 +245,8 @@ npm test
 
 `composer test` runs PHP parallel lint, MediaWiki CodeSniffer, and executable-bit checks. `composer phan` includes MediaWiki's taint-check plugin. `npm test` performs JavaScript syntax and security-invariant checks without downloading runtime libraries. The PHP test suites cover parsing, graph limits, cycles, Unicode, hostile payloads, escaped rendering, internal links, and missing files.
 
+The CI JavaScript job also opens [`tests/browser/edge-cases.html`](tests/browser/edge-cases.html) in headless Chrome. Its dependency-free browser harness checks every layout direction, narrow-container scrolling, transparent/dark theme defaults, white connector contrast, controls, highlighting, long text, disconnected components, malformed client metadata, cycles, reciprocal paths, parallel transitions, and repeated self-loops. Open that fixture in a browser for visual review while changing layout or CSS.
+
 The parser and renderer use stable modern interfaces documented in MediaWiki's tag-extension, `extension.json`, ParserOutput, LinkRenderer, and file-repository references. No deprecated parser-test manifest registration is used.
 
 ### Automated releases
