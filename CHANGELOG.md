@@ -7,6 +7,8 @@
 - Changed the default visual palette to translucent dark cards and labels with white plain text, connectors, and arrowheads while preserving the wiki's normal link colors.
 - Added gated CI release automation with cross-version verification, ResourceLoader dependency checks, collision-safe patch tags, verified ZIP packaging, SHA-256 checksums, workflow artifacts, and GitHub Releases.
 - Updated the CI coding-standard dependency to `mediawiki/mediawiki-codesniffer` 51.0.1, which uses the security-fixed PHP_CodeSniffer 3.13.6 while retaining PHP 8.2 development compatibility.
+- Fixed standalone CI Phan analysis by loading MediaWiki REL1_45 core, development dependencies, and integration-test symbols without analyzing MediaWiki's own source as extension code, and added real renderer smoke coverage to the supported-version matrix.
+- Added rendering compatibility for MediaWiki's namespaced `Html` class and stable `LinkTarget` interface across MediaWiki 1.35–1.46.
 
 ## 1.0.3 — 2026-08-25
 

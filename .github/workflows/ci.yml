@@ -19,16 +19,36 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          path: extension
+      - name: Check out MediaWiki for Phan symbols
+        uses: actions/checkout@v4
+        with:
+          repository: wikimedia/mediawiki
+          ref: REL1_45
+          path: mediawiki
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
-          extensions: ast, mbstring
+          extensions: ast, intl, mbstring
           coverage: none
       - uses: ramsey/composer-install@v3
+        with:
+          working-directory: extension
+      - name: Install MediaWiki development dependencies
+        run: composer install --no-interaction --prefer-dist
+        working-directory: mediawiki
       - run: composer validate --strict
+        working-directory: extension
       - run: composer test
+        working-directory: extension
       - run: composer audit --locked
-      - run: composer phan
+        working-directory: extension
+      - name: Run Phan against MediaWiki REL1_45
+        run: composer phan
+        working-directory: extension
+        env:
+          MW_INSTALL_PATH: ${{ github.workspace }}/mediawiki
 
   javascript:
     name: JavaScript and security checks
@@ -84,9 +104,17 @@ jobs:
       - name: Run standalone parser and security tests
         run: php extensions/MonsterEvolution/tests/run-unit.php
         working-directory: mediawiki
+      - name: Render a graph through MediaWiki services
+        run: |
+          output="$(printf '%s\n' '$services = MediaWiki\MediaWikiServices::getInstance(); $parser = $services->getService( "MonsterEvolution.Parser" ); $renderer = $services->getService( "MonsterEvolution.Renderer" ); $source = "[node id=\"awburn\" name=\"Awburn\"]\n[node id=\"kainite\" name=\"Kainite\"]\nawburn -> kainite"; $html = $renderer->render( $parser->parse( $source ), new ParserOutput() ); if ( strpos( $html, "mw-monster-evolution" ) === false || strpos( $html, "Awburn" ) === false ) { throw new RuntimeException( "MonsterEvolution did not render the expected graph markup." ); } print "MonsterEvolution rendered through MediaWiki services.\n";' | php maintenance/eval.php --conf extensions/MonsterEvolution/tests/compatibility/LocalSettings.php)"
+          printf '%s\n' "$output"
+          grep -Fq 'MonsterEvolution rendered through MediaWiki services.' <<< "$output"
+        working-directory: mediawiki
       - name: Verify ResourceLoader dependencies resolve
         run: |
-          printf '%s\n' '$services = MediaWiki\MediaWikiServices::getInstance(); $loader = $services->getResourceLoader(); $module = $loader->getModule( "ext.monsterEvolution" ); if ( $module === null ) { throw new RuntimeException( "ext.monsterEvolution is not registered." ); } foreach ( $module->getDependencies() as $dependency ) { if ( $loader->getModule( $dependency ) === null ) { throw new RuntimeException( "Unknown ResourceLoader dependency: " . $dependency ); } } print "MonsterEvolution ResourceLoader dependencies resolved.\n";' | php maintenance/eval.php --conf extensions/MonsterEvolution/tests/compatibility/LocalSettings.php
+          output="$(printf '%s\n' '$services = MediaWiki\MediaWikiServices::getInstance(); $loader = $services->getResourceLoader(); $module = $loader->getModule( "ext.monsterEvolution" ); if ( $module === null ) { throw new RuntimeException( "ext.monsterEvolution is not registered." ); } foreach ( $module->getDependencies() as $dependency ) { if ( $loader->getModule( $dependency ) === null ) { throw new RuntimeException( "Unknown ResourceLoader dependency: " . $dependency ); } } print "MonsterEvolution ResourceLoader dependencies resolved.\n";' | php maintenance/eval.php --conf extensions/MonsterEvolution/tests/compatibility/LocalSettings.php)"
+          printf '%s\n' "$output"
+          grep -Fq 'MonsterEvolution ResourceLoader dependencies resolved.' <<< "$output"
         working-directory: mediawiki
 
   release:

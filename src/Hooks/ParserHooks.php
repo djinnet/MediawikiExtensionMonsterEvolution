@@ -5,13 +5,13 @@ declare( strict_types=1 );
 namespace MediaWiki\Extension\MonsterEvolution\Hooks;
 
 use Config;
-use Html;
 use MediaWiki\Extension\MonsterEvolution\Parser\EvolutionParseException;
 use MediaWiki\Extension\MonsterEvolution\Parser\EvolutionParser;
 use MediaWiki\Extension\MonsterEvolution\Rendering\EvolutionRenderer;
 use MediaWiki\Extension\MonsterEvolution\Security\EvolutionLimits;
 use MediaWiki\Hook\OutputPageParserOutputHook;
 use MediaWiki\Hook\ParserFirstCallInitHook;
+use MediaWiki\Html\Html;
 use OutputPage;
 use Parser;
 use ParserOutput;

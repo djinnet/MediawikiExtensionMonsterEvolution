@@ -5,16 +5,16 @@ declare( strict_types=1 );
 namespace MediaWiki\Extension\MonsterEvolution\Rendering;
 
 use File;
-use Html;
 use HtmlArmor;
 use MediaWiki\Extension\MonsterEvolution\Model\EvolutionEdge;
 use MediaWiki\Extension\MonsterEvolution\Model\EvolutionGraph;
 use MediaWiki\Extension\MonsterEvolution\Model\EvolutionNode;
 use MediaWiki\Extension\MonsterEvolution\Resolution\WikiFileResolver;
 use MediaWiki\Extension\MonsterEvolution\Resolution\WikiLinkResolver;
+use MediaWiki\Html\Html;
 use MediaWiki\Linker\LinkRenderer;
+use MediaWiki\Linker\LinkTarget;
 use ParserOutput;
-use Title;
 
 final class EvolutionRenderer {
 	public function __construct(
@@ -123,7 +123,7 @@ final class EvolutionRenderer {
 	private function renderImage(
 		EvolutionNode $node,
 		EvolutionGraph $graph,
-		?Title $linkTitle,
+		?LinkTarget $linkTitle,
 		ParserOutput $output
 	): string {
 		if ( $node->image === null ) {

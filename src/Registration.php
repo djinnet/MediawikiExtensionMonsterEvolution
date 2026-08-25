@@ -17,6 +17,7 @@ final class Registration {
 	private const THEMES = [ 'default', 'compact', 'cards', 'minimal' ];
 
 	public static function validate( array $credits ): void {
+		self::installCompatibilityAliases();
 		self::assertEnum(
 			self::getConfig( 'MonsterEvolutionDefaultDirection' ),
 			'MonsterEvolutionDefaultDirection',
@@ -86,6 +87,12 @@ final class Registration {
 			self::getConfig( 'MonsterEvolutionMissingImage' ),
 			'MonsterEvolutionMissingImage'
 		);
+	}
+
+	private static function installCompatibilityAliases(): void {
+		if ( !class_exists( 'MediaWiki\\Html\\Html' ) && class_exists( 'Html' ) ) {
+			class_alias( 'Html', 'MediaWiki\\Html\\Html' );
+		}
 	}
 
 	private static function getConfig( string $name ): mixed {
