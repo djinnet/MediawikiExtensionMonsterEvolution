@@ -91,15 +91,21 @@ jobs:
           php-version: ${{ matrix.php }}
           extensions: intl, mbstring, sqlite3
           coverage: none
-      - run: composer install --no-interaction --prefer-dist
+      - name: Install MediaWiki 1.35 historical test dependencies
+        if: matrix.branch == 'REL1_35'
+        run: composer install --no-interaction --prefer-dist --no-security-blocking
+        working-directory: mediawiki
+      - name: Install MediaWiki test dependencies
+        if: matrix.branch != 'REL1_35'
+        run: composer install --no-interaction --prefer-dist
         working-directory: mediawiki
       - name: Validate extension registration (MediaWiki 1.35)
         if: matrix.branch == 'REL1_35'
-        run: php maintenance/validateRegistrationFile.php extensions/MonsterEvolution/extension.json
+        run: php maintenance/validateRegistrationFile.php extensions/MonsterEvolution/extension.json --conf extensions/MonsterEvolution/tests/compatibility/LocalSettings.php
         working-directory: mediawiki
       - name: Validate extension registration
         if: matrix.branch != 'REL1_35'
-        run: php maintenance/run.php validateRegistrationFile extensions/MonsterEvolution/extension.json
+        run: php maintenance/run.php validateRegistrationFile extensions/MonsterEvolution/extension.json --conf extensions/MonsterEvolution/tests/compatibility/LocalSettings.php
         working-directory: mediawiki
       - name: Run standalone parser and security tests
         run: php extensions/MonsterEvolution/tests/run-unit.php
