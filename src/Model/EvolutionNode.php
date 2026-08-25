@@ -5,7 +5,18 @@ declare( strict_types=1 );
 namespace MediaWiki\Extension\MonsterEvolution\Model;
 
 final class EvolutionNode {
-	/** @param string[] $classes */
+	/**
+	 * @param string $id
+	 * @param string $name
+	 * @param string|null $image
+	 * @param string|null $link
+	 * @param string|null $subtitle
+	 * @param string|null $form
+	 * @param string|null $tooltip
+	 * @param string[] $classes
+	 * @param int|null $imageWidth
+	 * @param int|null $imageHeight
+	 */
 	public function __construct(
 		public readonly string $id,
 		public readonly string $name,

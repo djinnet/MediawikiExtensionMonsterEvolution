@@ -5,7 +5,14 @@ declare( strict_types=1 );
 namespace MediaWiki\Extension\MonsterEvolution\Model;
 
 final class EvolutionEdge {
-	/** @param EvolutionCondition[] $conditions */
+	/**
+	 * @param string $source
+	 * @param string $target
+	 * @param string $type
+	 * @param string|null $label
+	 * @param EvolutionCondition[] $conditions
+	 * @param int $line
+	 */
 	public function __construct(
 		public readonly string $source,
 		public readonly string $target,

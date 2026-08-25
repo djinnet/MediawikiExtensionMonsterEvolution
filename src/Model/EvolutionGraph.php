@@ -13,7 +13,15 @@ final class EvolutionGraph {
 	/** @var EvolutionEdge[] */
 	private array $edges = [];
 
-	/** @param string[] $warnings */
+	/**
+	 * @param string $direction
+	 * @param string $theme
+	 * @param int $defaultImageWidth
+	 * @param int $defaultImageHeight
+	 * @param bool $zoom
+	 * @param bool $controls
+	 * @param string[] $warnings
+	 */
 	public function __construct(
 		public readonly string $direction,
 		public readonly string $theme,

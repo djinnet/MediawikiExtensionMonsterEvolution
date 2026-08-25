@@ -22,15 +22,29 @@ final class Registration {
 			'MonsterEvolutionDefaultDirection',
 			self::DIRECTIONS
 		);
-		self::assertEnum( self::getConfig( 'MonsterEvolutionDefaultTheme' ), 'MonsterEvolutionDefaultTheme', self::THEMES );
-		self::assertInt( self::getConfig( 'MonsterEvolutionDefaultImageWidth' ), 'MonsterEvolutionDefaultImageWidth', 16, 512 );
+		self::assertEnum(
+			self::getConfig( 'MonsterEvolutionDefaultTheme' ),
+			'MonsterEvolutionDefaultTheme',
+			self::THEMES
+		);
+		self::assertInt(
+			self::getConfig( 'MonsterEvolutionDefaultImageWidth' ),
+			'MonsterEvolutionDefaultImageWidth',
+			16,
+			512
+		);
 		self::assertInt(
 			self::getConfig( 'MonsterEvolutionDefaultImageHeight' ),
 			'MonsterEvolutionDefaultImageHeight',
 			16,
 			512
 		);
-		self::assertInt( self::getConfig( 'MonsterEvolutionMaxInputBytes' ), 'MonsterEvolutionMaxInputBytes', 1024, 1048576 );
+		self::assertInt(
+			self::getConfig( 'MonsterEvolutionMaxInputBytes' ),
+			'MonsterEvolutionMaxInputBytes',
+			1024,
+			1048576
+		);
 		self::assertInt( self::getConfig( 'MonsterEvolutionMaxNodes' ), 'MonsterEvolutionMaxNodes', 1, 1000 );
 		self::assertInt( self::getConfig( 'MonsterEvolutionMaxEdges' ), 'MonsterEvolutionMaxEdges', 1, 4000 );
 		self::assertInt(
@@ -39,10 +53,30 @@ final class Registration {
 			0,
 			100
 		);
-		self::assertInt( self::getConfig( 'MonsterEvolutionMaxAttributes' ), 'MonsterEvolutionMaxAttributes', 1, 64 );
-		self::assertInt( self::getConfig( 'MonsterEvolutionMaxValueLength' ), 'MonsterEvolutionMaxValueLength', 1, 16384 );
-		self::assertInt( self::getConfig( 'MonsterEvolutionMaxNodeIdLength' ), 'MonsterEvolutionMaxNodeIdLength', 1, 128 );
-		self::assertInt( self::getConfig( 'MonsterEvolutionMaxGraphsPerPage' ), 'MonsterEvolutionMaxGraphsPerPage', 1, 100 );
+		self::assertInt(
+			self::getConfig( 'MonsterEvolutionMaxAttributes' ),
+			'MonsterEvolutionMaxAttributes',
+			1,
+			64
+		);
+		self::assertInt(
+			self::getConfig( 'MonsterEvolutionMaxValueLength' ),
+			'MonsterEvolutionMaxValueLength',
+			1,
+			16384
+		);
+		self::assertInt(
+			self::getConfig( 'MonsterEvolutionMaxNodeIdLength' ),
+			'MonsterEvolutionMaxNodeIdLength',
+			1,
+			128
+		);
+		self::assertInt(
+			self::getConfig( 'MonsterEvolutionMaxGraphsPerPage' ),
+			'MonsterEvolutionMaxGraphsPerPage',
+			1,
+			100
+		);
 		self::assertBoolean( self::getConfig( 'MonsterEvolutionEnableZoom' ), 'MonsterEvolutionEnableZoom' );
 		self::assertBoolean(
 			self::getConfig( 'MonsterEvolutionEnableTrackingCategory' ),

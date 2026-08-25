@@ -52,7 +52,12 @@ final class ParserHooks implements ParserFirstCallInitHook, OutputPageParserOutp
 		$out->addModuleStyles( [ 'ext.monsterEvolution.styles' ] );
 	}
 
-	/** @param array<string,string> $attributes */
+	/**
+	 * @param string $input
+	 * @param array<string,string> $attributes
+	 * @param Parser $parser
+	 * @param PPFrame $frame
+	 */
 	public function renderTag( string $input, array $attributes, Parser $parser, PPFrame $frame ): string {
 		if ( strlen( $input ) > $this->limits->maxInputBytes ) {
 			return $this->renderError( $parser, new EvolutionParseException(
@@ -66,6 +71,8 @@ final class ParserHooks implements ParserFirstCallInitHook, OutputPageParserOutp
 	}
 
 	/**
+	 * @param Parser $parser
+	 * @param PPFrame $frame
 	 * @param array<int,mixed> $arguments
 	 * @return array<int|string,mixed>
 	 */
@@ -96,7 +103,11 @@ final class ParserHooks implements ParserFirstCallInitHook, OutputPageParserOutp
 		return [ $this->renderDefinition( $source, $attributes, $parser ), 'noparse' => true, 'isHTML' => true ];
 	}
 
-	/** @param array<string,string> $attributes */
+	/**
+	 * @param string $source
+	 * @param array<string,string> $attributes
+	 * @param Parser $parser
+	 */
 	private function renderDefinition( string $source, array $attributes, Parser $parser ): string {
 		$output = $parser->getOutput();
 		$count = $this->graphCounts[$output] ?? 0;

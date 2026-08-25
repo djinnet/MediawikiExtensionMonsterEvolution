@@ -130,7 +130,7 @@ final class EvolutionTokenizer {
 		return $attributes;
 	}
 
-	/** @param EvolutionStatement[] $statements */
+	/** @param EvolutionStatement[] &$statements */
 	private function appendStatement( array &$statements, string $buffer, int $line ): void {
 		$text = trim( $buffer );
 		if ( $text !== '' ) {

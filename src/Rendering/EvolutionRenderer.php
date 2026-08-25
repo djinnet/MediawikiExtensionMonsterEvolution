@@ -166,6 +166,7 @@ final class EvolutionRenderer {
 
 	/**
 	 * @param EvolutionEdge[] $edges
+	 * @param EvolutionGraph $graph
 	 * @param array<string,int> $indexes
 	 */
 	private function renderRelationships( array $edges, EvolutionGraph $graph, array $indexes ): string {

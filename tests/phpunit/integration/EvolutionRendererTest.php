@@ -8,9 +8,10 @@ use MediaWiki\Extension\MonsterEvolution\Model\EvolutionEdge;
 use MediaWiki\Extension\MonsterEvolution\Model\EvolutionGraph;
 use MediaWiki\Extension\MonsterEvolution\Model\EvolutionNode;
 use MediaWiki\Extension\MonsterEvolution\Rendering\EvolutionRenderer;
-use ParserOutput;
 use MediaWikiIntegrationTestCase;
+use ParserOutput;
 
+/** @covers \MediaWiki\Extension\MonsterEvolution\Rendering\EvolutionRenderer */
 final class EvolutionRendererTest extends MediaWikiIntegrationTestCase {
 	private function getRenderer(): EvolutionRenderer {
 		return $this->getServiceContainer()->getService( 'MonsterEvolution.Renderer' );

@@ -9,6 +9,7 @@ use MediaWiki\Extension\MonsterEvolution\Parser\EvolutionParser;
 use MediaWiki\Extension\MonsterEvolution\Security\EvolutionLimits;
 use PHPUnit\Framework\TestCase;
 
+/** @covers \MediaWiki\Extension\MonsterEvolution\Parser\EvolutionParser */
 final class EvolutionSecurityTest extends TestCase {
 	/** @dataProvider textPayloadProvider */
 	public function testTextPayloadsRemainPlainModelData( string $payload ): void {

@@ -33,7 +33,10 @@ final class EvolutionParser {
 		$this->tokenizer = new EvolutionTokenizer( $limits );
 	}
 
-	/** @param array<string,string> $tagAttributes */
+	/**
+	 * @param string $source
+	 * @param array<string,string> $tagAttributes
+	 */
 	public function parse( string $source, array $tagAttributes = [] ): EvolutionGraph {
 		if ( strlen( $source ) > $this->limits->maxInputBytes ) {
 			throw $this->error( 'The graph input is too large.', 0, 'monsterevolution-error-input-limit' );
@@ -86,7 +89,11 @@ final class EvolutionParser {
 					);
 				}
 				if ( count( $graph->getNodes() ) >= $this->limits->maxNodes ) {
-					throw $this->error( 'The node limit was exceeded.', $statement->line, 'monsterevolution-error-node-limit' );
+					throw $this->error(
+						'The node limit was exceeded.',
+						$statement->line,
+						'monsterevolution-error-node-limit'
+					);
 				}
 				$graph->addNode( $node );
 			} else {
@@ -167,7 +174,12 @@ final class EvolutionParser {
 		);
 	}
 
-	/** @param array<string,string> &$autoIds */
+	/**
+	 * @param EvolutionGraph $graph
+	 * @param EvolutionStatement $statement
+	 * @param bool $explicit
+	 * @param array<string,string> &$autoIds
+	 */
 	private function parseEdgeStatement(
 		EvolutionGraph $graph,
 		EvolutionStatement $statement,
@@ -236,7 +248,13 @@ final class EvolutionParser {
 		}
 	}
 
-	/** @param array<string,string> &$autoIds */
+	/**
+	 * @param EvolutionGraph $graph
+	 * @param string $endpoint
+	 * @param bool $explicit
+	 * @param array<string,string> &$autoIds
+	 * @param int $line
+	 */
 	private function resolveEndpoint(
 		EvolutionGraph $graph,
 		string $endpoint,
@@ -292,7 +310,11 @@ final class EvolutionParser {
 				continue;
 			}
 			if ( count( $conditions ) >= $this->limits->maxConditionsPerEdge ) {
-				throw $this->error( 'The condition limit was exceeded.', $line, 'monsterevolution-error-condition-limit' );
+				throw $this->error(
+					'The condition limit was exceeded.',
+					$line,
+					'monsterevolution-error-condition-limit'
+				);
 			}
 			$conditions[] = new EvolutionCondition( $part );
 		}
@@ -334,7 +356,10 @@ final class EvolutionParser {
 
 	private function validateLinkTitle( string $value, int $line ): void {
 		$this->validateText( $value, 'link', $line );
-		if ( preg_match( '/\A\s*(?:https?|javascript|data|vbscript|file):/i', $value ) || str_contains( $value, '://' ) ) {
+		if (
+			preg_match( '/\A\s*(?:https?|javascript|data|vbscript|file):/i', $value ) ||
+			str_contains( $value, '://' )
+		) {
 			throw $this->error(
 				'External or executable links are not allowed.',
 				$line,
