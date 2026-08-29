@@ -131,6 +131,49 @@ WIKI;
 		$this->assertTrue( $graph->controls );
 	}
 
+	public function testRadialLayoutOptions(): void {
+		$graph = $this->parser->parse( <<<'WIKI'
+[node id="eevee" name="Eevee"]
+[node id="flareon" name="Flareon"]
+eevee -> flareon
+WIKI, [
+			'layout' => 'radial',
+			'center' => 'eevee',
+			'radialShape' => 'polygon',
+			'radialStart' => 'right',
+		] );
+
+		$this->assertSame( 'radial', $graph->layout );
+		$this->assertSame( 'eevee', $graph->center );
+		$this->assertSame( 'polygon', $graph->radialShape );
+		$this->assertSame( 'right', $graph->radialStart );
+	}
+
+	/** @dataProvider invalidRadialOptionsProvider */
+	public function testInvalidRadialOptionsAreRejected( array $options ): void {
+		$this->expectException( EvolutionParseException::class );
+		$this->parser->parse( <<<'WIKI'
+[node id="eevee" name="Eevee"]
+[node id="flareon" name="Flareon"]
+eevee -> flareon
+WIKI, $options );
+	}
+
+	public static function invalidRadialOptionsProvider(): array {
+		return [
+			'missing center' => [ [ 'layout' => 'radial' ] ],
+			'unknown center' => [ [ 'layout' => 'radial', 'center' => 'missing' ] ],
+			'center on layered' => [ [ 'center' => 'eevee' ] ],
+			'unknown layout' => [ [ 'layout' => 'orbit' ] ],
+			'unknown shape' => [
+				[ 'layout' => 'radial', 'center' => 'eevee', 'radialShape' => 'hexagon' ],
+			],
+			'unknown start' => [
+				[ 'layout' => 'radial', 'center' => 'eevee', 'radialStart' => 'diagonal' ],
+			],
+		];
+	}
+
 	public function testUnknownNodeIsControlledError(): void {
 		$this->expectException( EvolutionParseException::class );
 		$this->expectExceptionMessage( 'Unknown node' );

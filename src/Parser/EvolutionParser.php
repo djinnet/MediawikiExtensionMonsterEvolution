@@ -27,10 +27,16 @@ final class EvolutionParser {
 	];
 
 	private const EDGE_ATTRIBUTES = [ 'type', 'label', 'conditions', 'icon', 'iconposition', 'link' ];
-	private const GRAPH_ATTRIBUTES = [ 'direction', 'theme', 'imagewidth', 'imageheight', 'zoom', 'controls' ];
+	private const GRAPH_ATTRIBUTES = [
+		'direction', 'theme', 'imagewidth', 'imageheight', 'zoom', 'controls',
+		'layout', 'center', 'radialshape', 'radialstart',
+	];
 	private const DIRECTIONS = [ 'left-to-right', 'right-to-left', 'top-to-bottom', 'bottom-to-top' ];
 	private const THEMES = [ 'default', 'compact', 'cards', 'minimal' ];
 	private const ICON_POSITIONS = [ 'above', 'next-to' ];
+	private const LAYOUTS = [ 'layered', 'radial' ];
+	private const RADIAL_SHAPES = [ 'circle', 'polygon' ];
+	private const RADIAL_STARTS = [ 'top', 'right', 'bottom', 'left' ];
 
 	private EvolutionTokenizer $tokenizer;
 	private EvolutionValueValidator $validator;
@@ -74,6 +80,45 @@ final class EvolutionParser {
 		if ( !in_array( $theme, self::THEMES, true ) ) {
 			throw $this->error( "Invalid theme \"$theme\".", 0, 'monsterevolution-error-option' );
 		}
+		$layout = strtolower( trim( $options['layout'] ?? 'layered' ) );
+		if ( !in_array( $layout, self::LAYOUTS, true ) ) {
+			throw $this->error( "Invalid layout \"$layout\".", 0, 'monsterevolution-error-option' );
+		}
+		$center = $this->validator->nullableTrim( $options['center'] ?? null );
+		$radialShape = strtolower( trim( $options['radialshape'] ?? 'circle' ) );
+		$radialStart = strtolower( trim( $options['radialstart'] ?? 'top' ) );
+		if ( !in_array( $radialShape, self::RADIAL_SHAPES, true ) ) {
+			throw $this->error(
+				"Invalid radial shape \"$radialShape\".",
+				0,
+				'monsterevolution-error-option'
+			);
+		}
+		if ( !in_array( $radialStart, self::RADIAL_STARTS, true ) ) {
+			throw $this->error(
+				"Invalid radial start \"$radialStart\".",
+				0,
+				'monsterevolution-error-option'
+			);
+		}
+		if ( $layout === 'radial' ) {
+			if ( $center === null ) {
+				throw $this->error(
+					'Radial layout requires a center node ID.',
+					0,
+					'monsterevolution-error-option'
+				);
+			}
+			$this->validator->validateId( $center, 0 );
+		} elseif (
+			$center !== null || isset( $options['radialshape'] ) || isset( $options['radialstart'] )
+		) {
+			throw $this->error(
+				'Center and radial options require layout="radial".',
+				0,
+				'monsterevolution-error-option'
+			);
+		}
 		$imageWidth = $this->validator->parseDimension(
 			$options['imagewidth'] ?? null,
 			$this->defaultImageWidth,
@@ -87,12 +132,16 @@ final class EvolutionParser {
 		$zoom = $this->validator->parseBoolean( $options['zoom'] ?? 'false', 0 );
 		$controls = $this->validator->parseBoolean( $options['controls'] ?? 'false', 0 ) && $zoom;
 		$graph = new EvolutionGraph(
-			$direction,
-			$theme,
-			$imageWidth,
-			$imageHeight,
-			$zoom,
-			$controls
+			direction: $direction,
+			theme: $theme,
+			defaultImageWidth: $imageWidth,
+			defaultImageHeight: $imageHeight,
+			zoom: $zoom,
+			controls: $controls,
+			layout: $layout,
+			center: $center,
+			radialShape: $radialShape,
+			radialStart: $radialStart
 		);
 
 		$statements = $this->tokenizer->tokenize( str_replace( "\r\n", "\n", $source ) );
@@ -129,6 +178,14 @@ final class EvolutionParser {
 		}
 		if ( $graph->getNodes() === [] ) {
 			throw $this->error( 'The graph contains no nodes.', 0, 'monsterevolution-error-empty' );
+		}
+		if ( $center !== null && !isset( $graph->getNodes()[$center] ) ) {
+			throw $this->error(
+				"Unknown center node \"$center\".",
+				0,
+				'monsterevolution-error-unknown-node',
+				[ $center ]
+			);
 		}
 		return $graph;
 	}

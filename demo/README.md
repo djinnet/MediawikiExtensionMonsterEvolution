@@ -5,7 +5,7 @@ These `.wiki` files are copyable examples for MonsterEvolution features. They in
 | File | Demonstrates |
 | --- | --- |
 | `ComplexEvolution.wiki` | Generic branches, merges, conditions, and fusion. |
-| `PokemonEevee.wiki` | A wide branch with item icons above and beside labels. |
+| `PokemonEevee.wiki` | A centered radial circle with eight item branches, icons, and linked labels. |
 | `DigimonAgumon.wiki` | A franchise whose evolution routes vary by game and continuity. |
 | `LumenTaleStarters.wiki` | Multiple disconnected starter lines. |
 | `CoromonToruga.wiki` | A compact level-based chain. |

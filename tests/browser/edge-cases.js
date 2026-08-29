@@ -75,9 +75,16 @@
 
 		const root = createElement(
 			'div',
-			'mw-monster-evolution mw-monster-evolution--default mw-monster-evolution--' + definition.direction
+			'mw-monster-evolution mw-monster-evolution--default mw-monster-evolution--' +
+				definition.direction + ' mw-monster-evolution--layout-' + ( definition.layout || 'layered' )
 		);
 		root.setAttribute( 'data-direction', definition.direction );
+		root.setAttribute( 'data-layout', definition.layout || 'layered' );
+		if ( definition.layout === 'radial' ) {
+			root.setAttribute( 'data-center', String( definition.center ) );
+			root.setAttribute( 'data-radial-shape', definition.radialShape || 'circle' );
+			root.setAttribute( 'data-radial-start', definition.radialStart || 'top' );
+		}
 		root.setAttribute( 'data-zoom', definition.controls ? 'true' : 'false' );
 		root.setAttribute( 'aria-label', definition.title );
 
@@ -165,6 +172,61 @@
 			},
 			{ source: 0, target: 1, label: 'Item', icon: true, iconPosition: 'above' },
 			{ source: 0, target: 1, icon: true, iconPosition: 'next-to' }
+		]
+	} );
+
+	buildGraph( {
+		id: 'radial-eevee',
+		title: 'Eevee radial circle',
+		direction: 'left-to-right',
+		layout: 'radial',
+		center: 0,
+		radialShape: 'circle',
+		radialStart: 'top',
+		nodes: [
+			'Eevee', 'Vaporeon', 'Jolteon', 'Flareon', 'Espeon',
+			'Umbreon', 'Leafeon', 'Glaceon', 'Sylveon'
+		],
+		edges: Array.from( { length: 8 }, ( unused, index ) => ( {
+			source: 0,
+			target: index + 1,
+			label: 'Method ' + ( index + 1 ),
+			type: 'item'
+		} ) )
+	} );
+
+	buildGraph( {
+		id: 'radial-rings',
+		title: 'Radial polygon with multiple rings',
+		direction: 'left-to-right',
+		layout: 'radial',
+		center: 0,
+		radialShape: 'polygon',
+		radialStart: 'right',
+		nodes: [ 'Center', 'A', 'B', 'C', 'D', 'A2', 'B2', 'Disconnected' ],
+		edges: [
+			{ source: 0, target: 1, label: 'A' },
+			{ source: 0, target: 2, label: 'B' },
+			{ source: 0, target: 3, label: 'C' },
+			{ source: 0, target: 4, label: 'D' },
+			{ source: 1, target: 5, label: 'A2' },
+			{ source: 2, target: 6, label: 'B2' }
+		]
+	} );
+
+	buildGraph( {
+		id: 'radial-nonfirst-center',
+		title: 'Radial center declared after another node',
+		direction: 'left-to-right',
+		layout: 'radial',
+		center: 1,
+		radialShape: 'circle',
+		radialStart: 'bottom',
+		nodes: [ 'First declaration', 'Selected center', 'Last declaration' ],
+		edges: [
+			{ source: 1, target: 0, label: 'First' },
+			{ source: 1, target: 2, label: 'Last' },
+			{ source: 1, target: 1, label: 'Center loop' }
 		]
 	} );
 
@@ -325,6 +387,65 @@
 		assert( linkedLabel !== null && linkedLabel.querySelector( 'img' ) !== null &&
 			linkedLabel.textContent === 'Level',
 			'links: the icon and label text are contained by one clickable anchor' );
+
+		const radial = document.querySelector( '[data-case="radial-eevee"]' );
+		const radialCanvas = rectangle( radial.querySelector( '.mw-monster-evolution-canvas' ) );
+		const radialNodes = Array.from( radial.querySelectorAll( '.mw-monster-evolution-node' ) );
+		const radialCenter = rectangle( radialNodes[ 0 ] );
+		const centerX = radialCenter.left + radialCenter.width / 2;
+		const centerY = radialCenter.top + radialCenter.height / 2;
+		assert( Math.abs( centerX - ( radialCanvas.left + radialCanvas.width / 2 ) ) < 1 &&
+			Math.abs( centerY - ( radialCanvas.top + radialCanvas.height / 2 ) ) < 1,
+			'radial: selected Eevee node occupies the canvas center' );
+		const radialDistances = radialNodes.slice( 1 ).map( ( node ) => {
+			const bounds = rectangle( node );
+			return Math.hypot(
+				bounds.left + bounds.width / 2 - centerX,
+				bounds.top + bounds.height / 2 - centerY
+			);
+		} );
+		assert( Math.max( ...radialDistances ) - Math.min( ...radialDistances ) < 1,
+			'radial: Eevee evolutions occupy one even circle' );
+		assert( rectangle( radialNodes[ 1 ] ).top < radialCenter.top,
+			'radial: radialStart top places the first evolution above the center' );
+		const radialLabels = Array.from( radial.querySelectorAll( '.mw-monster-evolution-edge-label' ) );
+		radialLabels.forEach( ( label, index ) => {
+			radialNodes.forEach( ( node, nodeIndex ) => {
+				assert( !intersects( rectangle( label ), rectangle( node ) ),
+					'radial: label ' + index + ' does not cover node ' + nodeIndex );
+			} );
+		} );
+
+		const rings = document.querySelector( '[data-case="radial-rings"]' );
+		const ringNodes = Array.from( rings.querySelectorAll( '.mw-monster-evolution-node' ) );
+		const ringCenter = rectangle( ringNodes[ 0 ] );
+		const ringCenterX = ringCenter.left + ringCenter.width / 2;
+		const ringCenterY = ringCenter.top + ringCenter.height / 2;
+		const distanceFromCenter = ( node ) => {
+			const bounds = rectangle( node );
+			return Math.hypot(
+				bounds.left + bounds.width / 2 - ringCenterX,
+				bounds.top + bounds.height / 2 - ringCenterY
+			);
+		};
+		assert( distanceFromCenter( ringNodes[ 5 ] ) > distanceFromCenter( ringNodes[ 1 ] ),
+			'radial: later evolution generations use successive rings' );
+		assert( distanceFromCenter( ringNodes[ 7 ] ) > distanceFromCenter( ringNodes[ 5 ] ),
+			'radial: disconnected nodes remain visible on an outer ring' );
+		assert( rectangle( ringNodes[ 1 ] ).left > ringCenter.right,
+			'radial: radialStart right places the first polygon node to the right' );
+
+		const nonfirst = document.querySelector( '[data-case="radial-nonfirst-center"]' );
+		const nonfirstCanvas = rectangle( nonfirst.querySelector( '.mw-monster-evolution-canvas' ) );
+		const nonfirstNodes = nonfirst.querySelectorAll( '.mw-monster-evolution-node' );
+		const selectedCenter = rectangle( nonfirstNodes[ 1 ] );
+		assert(
+			Math.abs( selectedCenter.left + selectedCenter.width / 2 -
+				( nonfirstCanvas.left + nonfirstCanvas.width / 2 ) ) < 1 &&
+			Math.abs( selectedCenter.top + selectedCenter.height / 2 -
+				( nonfirstCanvas.top + nonfirstCanvas.height / 2 ) ) < 1,
+			'radial: an explicitly selected non-first node occupies the center'
+		);
 
 		const cycle = document.querySelector( '[data-case="cycle"]' );
 		const loopPaths = Array.from( cycle.querySelectorAll( '.mw-monster-evolution-edge-path' ) ).slice( -2 )

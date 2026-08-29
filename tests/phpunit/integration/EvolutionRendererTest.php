@@ -41,6 +41,30 @@ final class EvolutionRendererTest extends MediaWikiIntegrationTestCase {
 		$this->assertContains( 'ext.monsterEvolution.styles', $output->getModuleStyles() );
 	}
 
+	public function testRendererExposesValidatedRadialMetadata(): void {
+		$graph = new EvolutionGraph(
+			direction: 'left-to-right',
+			theme: 'default',
+			defaultImageWidth: 96,
+			defaultImageHeight: 96,
+			zoom: false,
+			controls: false,
+			layout: 'radial',
+			center: 'eevee',
+			radialShape: 'polygon',
+			radialStart: 'right'
+		);
+		$graph->addNode( new EvolutionNode( 'flareon', 'Flareon' ) );
+		$graph->addNode( new EvolutionNode( 'eevee', 'Eevee' ) );
+		$graph->addEdge( new EvolutionEdge( 'eevee', 'flareon' ) );
+		$html = $this->getRenderer()->render( $graph, new ParserOutput() );
+
+		$this->assertStringContainsString( 'data-layout="radial"', $html );
+		$this->assertStringContainsString( 'data-center="1"', $html );
+		$this->assertStringContainsString( 'data-radial-shape="polygon"', $html );
+		$this->assertStringContainsString( 'data-radial-start="right"', $html );
+	}
+
 	public function testInternalLinkUsesMediaWikiLinkRenderer(): void {
 		$graph = new EvolutionGraph( 'left-to-right', 'default', 96, 96, false, false );
 		$graph->addNode( new EvolutionNode( 'safe', 'Safe title', null, 'Help:Contents' ) );

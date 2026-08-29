@@ -28,6 +28,10 @@ final class EvolutionGraph {
 	 * @param bool $zoom
 	 * @param bool $controls
 	 * @param string[] $warnings
+	 * @param string $layout
+	 * @param string|null $center
+	 * @param string $radialShape
+	 * @param string $radialStart
 	 */
 	public function __construct(
 		public readonly string $direction,
@@ -36,7 +40,11 @@ final class EvolutionGraph {
 		public readonly int $defaultImageHeight,
 		public readonly bool $zoom,
 		public readonly bool $controls,
-		private array $warnings = []
+		private array $warnings = [],
+		public readonly string $layout = 'layered',
+		public readonly ?string $center = null,
+		public readonly string $radialShape = 'circle',
+		public readonly string $radialStart = 'top'
 	) {
 	}
 

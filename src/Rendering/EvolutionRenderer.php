@@ -66,8 +66,13 @@ final class EvolutionRenderer {
 
 		return Html::rawElement( 'div', [
 			'class' => 'mw-monster-evolution mw-monster-evolution--' . $graph->theme .
-				' mw-monster-evolution--' . $graph->direction,
+				' mw-monster-evolution--' . $graph->direction .
+				' mw-monster-evolution--layout-' . $graph->layout,
 			'data-direction' => $graph->direction,
+			'data-layout' => $graph->layout,
+			'data-center' => $graph->center !== null ? (string)$indexes[$graph->center] : '',
+			'data-radial-shape' => $graph->radialShape,
+			'data-radial-start' => $graph->radialStart,
 			'data-zoom' => $graph->zoom && $this->zoomEnabled ? 'true' : 'false',
 			'aria-label' => wfMessage( 'monsterevolution-graph-label' )->inContentLanguage()->text(),
 		], $controls . $viewport . $relationships );

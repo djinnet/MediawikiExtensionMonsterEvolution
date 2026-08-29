@@ -37,7 +37,7 @@ A chart has three layers:
 2. `[node ...]` declarations describe the cards.
 3. Arrow statements describe directed relationships between cards.
 
-Coordinates are never entered manually. The browser assigns layers, reduces crossings, and draws SVG arrows. Branches, merges, multiple roots, disconnected groups, cycles, reversible changes, and self-loops are all valid because the data model is a directed graph rather than a tree.
+Coordinates are never entered manually. The browser assigns layers or radial rings and draws SVG arrows. Branches, merges, multiple roots, disconnected groups, cycles, reversible changes, and self-loops are all valid because the data model is a directed graph rather than a tree.
 
 Blank lines are ignored. Attribute names are case-insensitive. Attribute values must be quoted with matching single or double quotes.
 
@@ -53,12 +53,52 @@ Options are written on the opening tag:
 
 | Option | Accepted values | Default | Notes |
 | --- | --- | --- | --- |
+| `layout` | `layered`, `radial` | `layered` | Chooses the layout algorithm. Radial layout requires `center`. |
 | `direction` | `left-to-right`, `right-to-left`, `top-to-bottom`, `bottom-to-top` | `left-to-right` | `horizontal` and `vertical` are aliases for left-to-right and top-to-bottom. |
+| `center` | Declared node ID | Empty | Required for radial layout and rejected for layered layout. |
+| `radialShape` | `circle`, `polygon` | `circle` | Circle staggers alternate rings; polygon keeps common angular spokes. |
+| `radialStart` | `top`, `right`, `bottom`, `left` | `top` | Position of the first source-order node on every radial ring. |
 | `theme` | `default`, `compact`, `cards`, `minimal` | `default` | Themes change card density and decoration, not graph meaning. |
 | `imageWidth` | Whole number from 16–512 | `96` | Default thumbnail width in pixels. |
 | `imageHeight` | Whole number from 16–512 | `96` | Default thumbnail height in pixels. |
 | `zoom` | `true`, `false`, `yes`, `no`, `1`, `0` | `false` | Enables client zoom behavior. |
 | `controls` | Same Boolean values | `false` | Shows zoom buttons only when `zoom` is also enabled and the administrator allows zoom. |
+
+### Radial layout
+
+Radial layout is useful when one creature has many alternatives, such as Eevee:
+
+```wiki
+<evolution
+ layout="radial"
+ center="eevee"
+ radialShape="circle"
+ radialStart="top"
+ theme="cards"
+ zoom="true"
+ controls="true"
+>
+[node id="eevee" name="Eevee"]
+[node id="vaporeon" name="Vaporeon"]
+[node id="jolteon" name="Jolteon"]
+[node id="flareon" name="Flareon"]
+
+eevee -> vaporeon [label="Water Stone"]
+eevee -> jolteon [label="Thunder Stone"]
+eevee -> flareon [label="Fire Stone"]
+</evolution>
+```
+
+The selected node occupies the center. Directly connected nodes use the first
+ring, later generations use successive rings, and disconnected nodes remain
+visible on an outer ring. Nodes retain source order clockwise from
+`radialStart`. `direction` remains accepted for compatibility but does not
+control radial positioning.
+
+Circle mode offsets alternate rings to reduce straight radial corridors.
+Polygon mode keeps rings aligned to common angular spokes. For a single ring,
+both modes create the regular polygon implied by its node count: six nodes form
+a hexagon and eight nodes form an octagon.
 
 ## 4. Node attributes
 

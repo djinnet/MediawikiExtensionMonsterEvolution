@@ -200,6 +200,54 @@ foreach ( [ 'default', 'compact', 'cards', 'minimal' ] as $theme ) {
 	$assert( $graph->theme === $theme, "Theme $theme is accepted case-insensitively." );
 }
 
+$radialSource = <<<'WIKI'
+[node id="eevee" name="Eevee"]
+[node id="vaporeon" name="Vaporeon"]
+[node id="jolteon" name="Jolteon"]
+eevee -> vaporeon
+eevee -> jolteon
+WIKI;
+$radial = $parser->parse( $radialSource, [
+	'layout' => 'RADIAL',
+	'center' => 'eevee',
+	'radialShape' => 'POLYGON',
+	'radialStart' => 'RIGHT',
+] );
+$assert( $radial->layout === 'radial', 'Radial layout is accepted case-insensitively.' );
+$assert( $radial->center === 'eevee', 'Radial layout retains its explicit center ID.' );
+$assert( $radial->radialShape === 'polygon', 'Radial polygon shape is normalized.' );
+$assert( $radial->radialStart === 'right', 'Radial starting position is normalized.' );
+foreach ( [ 'top', 'right', 'bottom', 'left' ] as $start ) {
+	$graph = $parser->parse( $radialSource, [
+		'layout' => 'radial',
+		'center' => 'eevee',
+		'radialStart' => $start,
+	] );
+	$assert( $graph->radialStart === $start, "Radial starting position $start is accepted." );
+}
+$expectError(
+	static fn () => $parser->parse( $radialSource, [ 'layout' => 'radial' ] ),
+	'Radial layout without a center is rejected.'
+);
+$expectError(
+	static fn () => $parser->parse( $radialSource, [ 'layout' => 'radial', 'center' => 'missing' ] ),
+	'Radial layout with an unknown center is rejected.'
+);
+$expectError(
+	static fn () => $parser->parse( $radialSource, [ 'center' => 'eevee' ] ),
+	'Radial-only options are rejected for layered layout.'
+);
+foreach ( [
+	[ 'layout' => 'orbit' ],
+	[ 'layout' => 'radial', 'center' => 'eevee', 'radialShape' => 'hexagon' ],
+	[ 'layout' => 'radial', 'center' => 'eevee', 'radialStart' => 'diagonal' ],
+] as $invalidRadialOptions ) {
+	$expectError(
+		static fn () => $parser->parse( $radialSource, $invalidRadialOptions ),
+		'Invalid radial graph options are rejected.'
+	);
+}
+
 foreach ( [ '1', 'true', 'TRUE', 'yes', ' YES ' ] as $truthy ) {
 	$assert( $parser->parse( 'A -> B', [ 'zoom' => $truthy ] )->zoom, "Boolean $truthy is true." );
 }

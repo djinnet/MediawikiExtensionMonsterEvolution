@@ -40,10 +40,10 @@
 					target,
 					type: edgeElement.getAttribute( 'data-edge-type' ) || 'custom',
 					label: edgeElement.getAttribute( 'data-edge-label' ) || '',
-						iconPosition: requestedIconPosition === 'above' ? 'above' : 'next-to',
-						icon: edgeElement.querySelector( '.mw-monster-evolution-edge-icon-source img' ),
-						link: edgeElement.querySelector( '.mw-monster-evolution-edge-label-link' ),
-						element: edgeElement
+					iconPosition: requestedIconPosition === 'above' ? 'above' : 'next-to',
+					icon: edgeElement.querySelector( '.mw-monster-evolution-edge-icon-source img' ),
+					link: edgeElement.querySelector( '.mw-monster-evolution-edge-label-link' ),
+					element: edgeElement
 				} );
 			}
 		} );
@@ -206,6 +206,113 @@
 		return { positions, width, height, horizontal };
 	}
 
+	/**
+	 * Group nodes by their shortest undirected distance from the selected center.
+	 * Direction remains an edge semantic, but either incoming or outgoing neighbors
+	 * belong on the next visual ring. Disconnected nodes receive one outer ring so a
+	 * malformed or intentionally mixed graph remains finite and inspectable.
+	 */
+	function radialGroups( nodeCount, edges, center ) {
+		const adjacency = Array.from( { length: nodeCount }, () => [] );
+		edges.forEach( ( edge ) => {
+			if ( edge.source !== edge.target ) {
+				adjacency[ edge.source ].push( edge.target );
+				adjacency[ edge.target ].push( edge.source );
+			}
+		} );
+		const distances = new Array( nodeCount ).fill( -1 );
+		const queue = [ center ];
+		distances[ center ] = 0;
+		while ( queue.length > 0 ) {
+			const current = queue.shift();
+			adjacency[ current ].forEach( ( neighbor ) => {
+				if ( distances[ neighbor ] === -1 ) {
+					distances[ neighbor ] = distances[ current ] + 1;
+					queue.push( neighbor );
+				}
+			} );
+		}
+		const outerDistance = Math.max( 0, ...distances ) + 1;
+		const groups = [];
+		distances.forEach( ( distance, node ) => {
+			const ring = distance === -1 ? outerDistance : distance;
+			groups[ ring ] = groups[ ring ] || [];
+			groups[ ring ].push( node );
+		} );
+		return groups.filter( Boolean );
+	}
+
+	/**
+	 * Position one node at the center and successive graph-distance groups on rings.
+	 * Ring radii account for the largest card diagonal and chord length, which gives
+	 * a conservative no-overlap bound even when cards have different dimensions.
+	 */
+	function positionRadialNodes( data, sizes, center, shape, start ) {
+		const groups = radialGroups( sizes.length, data.edges, center );
+		const startAngles = {
+			top: -Math.PI / 2,
+			right: 0,
+			bottom: Math.PI / 2,
+			left: Math.PI
+		};
+		const startAngle = startAngles[ start ] === undefined ? startAngles.top : startAngles[ start ];
+		const positions = new Array( sizes.length );
+		const radii = [ 0 ];
+		let previousRadius = 0;
+		let previousHalfDiagonal = Math.hypot( sizes[ center ].width, sizes[ center ].height ) / 2;
+		groups.slice( 1 ).forEach( ( group, offset ) => {
+			const ring = offset + 1;
+			const largestDiagonal = Math.max( ...group.map( ( node ) =>
+				Math.hypot( sizes[ node ].width, sizes[ node ].height )
+			) );
+			const separationRadius = previousRadius + previousHalfDiagonal + largestDiagonal / 2 + 84;
+			const capacityRadius = group.length > 1 ?
+				( largestDiagonal + 36 ) / ( 2 * Math.sin( Math.PI / group.length ) ) : 0;
+			radii[ ring ] = Math.max( separationRadius, capacityRadius );
+			previousRadius = radii[ ring ];
+			previousHalfDiagonal = largestDiagonal / 2;
+		} );
+
+		const largestHalfDiagonal = Math.max( ...sizes.map( ( size ) =>
+			Math.hypot( size.width, size.height ) / 2
+		) );
+		const outerRadius = Math.max( 0, ...radii );
+		const selfLoops = new Array( sizes.length ).fill( 0 );
+		data.edges.forEach( ( edge ) => {
+			if ( edge.source === edge.target ) {
+				selfLoops[ edge.source ]++;
+			}
+		} );
+		const maximumSelfLoops = Math.max( 0, ...selfLoops );
+		const loopClearance = maximumSelfLoops > 0 ? 72 + ( maximumSelfLoops - 1 ) * 16 : 0;
+		const margin = 104 + loopClearance;
+		const extent = Math.max( 160, outerRadius + largestHalfDiagonal + margin );
+		const width = extent * 2;
+		const height = extent * 2;
+		const centerPoint = { x: extent, y: extent };
+		groups.forEach( ( group, ring ) => {
+			if ( ring === 0 ) {
+				const size = sizes[ center ];
+				positions[ center ] = {
+					x: centerPoint.x - size.width / 2,
+					y: centerPoint.y - size.height / 2
+				};
+				return;
+			}
+			// Circle mode staggers alternate rings. Polygon mode keeps common spokes,
+			// producing stable regular-polygon vertices for a ring's source-order nodes.
+			const stagger = shape === 'circle' && ring % 2 === 0 ? Math.PI / group.length : 0;
+			group.forEach( ( node, index ) => {
+				const angle = startAngle + stagger + index * Math.PI * 2 / group.length;
+				positions[ node ] = {
+					x: centerPoint.x + Math.cos( angle ) * radii[ ring ] - sizes[ node ].width / 2,
+					y: centerPoint.y + Math.sin( angle ) * radii[ ring ] - sizes[ node ].height / 2
+				};
+			} );
+		} );
+		return { positions, width, height, horizontal: false, radial: true, centerPoint };
+	}
+
 	function edgePath( source, target, sourceSize, targetSize, horizontal, offset, outerLane, loopOffset ) {
 		if ( source === target ) {
 			if ( horizontal ) {
@@ -280,6 +387,45 @@
 				targetCenter.x + ' ' + y2,
 			labelX: ( sourceCenter.x + targetCenter.x ) / 2 + offset,
 			labelY: middle
+		};
+	}
+
+	/** Connect arbitrary radial cards at their rectangle boundaries. */
+	function radialEdgePath( source, target, sourceSize, targetSize, offset, loopOffset ) {
+		if ( source === target ) {
+			return edgePath( source, target, sourceSize, targetSize, true, offset, 0, loopOffset );
+		}
+		const sourceCenter = {
+			x: source.x + sourceSize.width / 2,
+			y: source.y + sourceSize.height / 2
+		};
+		const targetCenter = {
+			x: target.x + targetSize.width / 2,
+			y: target.y + targetSize.height / 2
+		};
+		const dx = targetCenter.x - sourceCenter.x;
+		const dy = targetCenter.y - sourceCenter.y;
+		const length = Math.max( 1, Math.hypot( dx, dy ) );
+		const sourceScale = 1 / Math.max(
+			Math.abs( dx ) / Math.max( 1, sourceSize.width / 2 ),
+			Math.abs( dy ) / Math.max( 1, sourceSize.height / 2 )
+		);
+		const targetScale = 1 / Math.max(
+			Math.abs( dx ) / Math.max( 1, targetSize.width / 2 ),
+			Math.abs( dy ) / Math.max( 1, targetSize.height / 2 )
+		);
+		const x1 = sourceCenter.x + dx * sourceScale;
+		const y1 = sourceCenter.y + dy * sourceScale;
+		const x2 = targetCenter.x - dx * targetScale;
+		const y2 = targetCenter.y - dy * targetScale;
+		const normalX = -dy / length;
+		const normalY = dx / length;
+		const controlX = ( x1 + x2 ) / 2 + normalX * offset;
+		const controlY = ( y1 + y2 ) / 2 + normalY * offset;
+		return {
+			path: 'M ' + x1 + ' ' + y1 + ' Q ' + controlX + ' ' + controlY + ' ' + x2 + ' ' + y2,
+			labelX: controlX,
+			labelY: controlY
 		};
 	}
 
@@ -358,10 +504,17 @@
 			// Reserve larger parallel lanes for the whole directed pair so its curves
 			// and labels remain consistently aligned and do not collide.
 			const parallelSpacing = parallelHasIcons.get( key ) ?
-				( layout.horizontal ? 52 : 100 ) : 18;
+				( layout.radial || layout.horizontal ? 52 : 100 ) : 18;
 			const parallelOffset = ( occurrence - ( parallelCount - 1 ) / 2 ) * parallelSpacing;
 			const offset = parallelOffset + ( reverse ? ( edge.source < edge.target ? -14 : 14 ) : 0 );
-			const geometry = edgePath(
+			const geometry = layout.radial ? radialEdgePath(
+				layout.positions[ edge.source ],
+				layout.positions[ edge.target ],
+				sizes[ edge.source ],
+				sizes[ edge.target ],
+				offset,
+				occurrence * 16
+			) : edgePath(
 				layout.positions[ edge.source ],
 				layout.positions[ edge.target ],
 				sizes[ edge.source ],
@@ -417,9 +570,23 @@
 			width: Math.ceil( node.getBoundingClientRect().width / state.scale ),
 			height: Math.ceil( node.getBoundingClientRect().height / state.scale )
 		} ) );
-		const graph = layerGraph( data.nodes.length, data.edges );
-		const direction = root.getAttribute( 'data-direction' ) || 'left-to-right';
-		const result = positionNodes( graph, sizes, direction );
+		const layoutMode = root.getAttribute( 'data-layout' ) || 'layered';
+		let result;
+		if ( layoutMode === 'radial' ) {
+			const requestedCenter = numberAttribute( root, 'data-center' );
+			const center = requestedCenter >= 0 && requestedCenter < data.nodes.length ? requestedCenter : 0;
+			result = positionRadialNodes(
+				data,
+				sizes,
+				center,
+				root.getAttribute( 'data-radial-shape' ) || 'circle',
+				root.getAttribute( 'data-radial-start' ) || 'top'
+			);
+		} else {
+			const graph = layerGraph( data.nodes.length, data.edges );
+			const direction = root.getAttribute( 'data-direction' ) || 'left-to-right';
+			result = positionNodes( graph, sizes, direction );
+		}
 		state.width = result.width;
 		state.height = result.height;
 		canvas.style.width = result.width + 'px';

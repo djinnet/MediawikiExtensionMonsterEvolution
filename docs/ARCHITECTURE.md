@@ -57,7 +57,7 @@ The codebase favors composition and final value classes over inheritance hierarc
 - Image and icon fields are local file-title text, never URLs or paths.
 - Node and edge-label link fields are internal title text, never executable or external URLs.
 - Semantic types/classes match a restrictive token grammar before becoming class suffixes.
-- Directions, themes, icon positions, dimensions, and Booleans are normalized before entering the model.
+- Layouts, directions, radial options, themes, icon positions, dimensions, and Booleans are normalized before entering the model.
 - Node, edge, attribute, condition, value, input-byte, and per-page graph limits are enforced before unbounded growth.
 
 `EvolutionGraph` checks duplicate IDs itself as defense in depth, even though `EvolutionParser` normally detects them first.
@@ -94,12 +94,20 @@ The client never receives a raw icon or link URL attribute. This design lets Med
 - Edge indexes must be nonnegative and inside the node array.
 - Cycle processing and highlighting are iterative and track visited nodes.
 - Crossing reduction uses a fixed six sweeps.
+- Radial rings use bounded breadth-first distance from one validated center index.
+- Ring radii include card diagonals and chord capacity so differently sized cards do not overlap.
 - Zoom is clamped between 0.45 and 2.
 - Parallel edges and repeated self-loops receive distinct geometry.
 - Canvas space includes self-loop clearance.
 - Wide charts overflow their own focusable viewport, not the page.
 
 When changing geometry, update `tests/browser/edge-cases.js` with a relationship that would fail before the change. Test all four directions and a narrow viewport.
+
+Layered and radial positioning are separate algorithms selected from validated
+server metadata. `direction` belongs to layered positioning; radial positioning
+uses `center`, `radialShape`, and `radialStart`. Both algorithms produce the same
+small layout result contract (`positions`, dimensions, and routing hints), so
+edge drawing, zoom, highlighting, accessibility, and print fallback stay shared.
 
 ## MediaWiki compatibility boundary
 

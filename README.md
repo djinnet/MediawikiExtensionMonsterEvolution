@@ -1,6 +1,6 @@
 # MonsterEvolution
 
-MonsterEvolution is a MediaWiki parser extension for interactive, accessible creature-evolution graphs. Its model is a directed graph—not a recursive tree—so it supports branches, merges, fusion, cycles, reversible changes, self-loops, multiple roots, and disconnected components.
+MonsterEvolution is a MediaWiki parser extension for interactive, accessible creature-evolution graphs. Its model is a directed graph—not a recursive tree—so it supports branches, merges, fusion, cycles, reversible changes, self-loops, multiple roots, disconnected components, layered layouts, and centered radial rings.
 
 For editor-facing syntax and examples, start with [Usage.md](Usage.md). Contributors should also read [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), which describes component responsibilities, SOLID boundaries, model invariants, the progressive-enhancement contract, and safe feature-extension steps.
 
@@ -148,13 +148,19 @@ Tag options are:
 
 | Option | Values | Default |
 | --- | --- | --- |
+| `layout` | `layered`, `radial` | `layered` |
 | `direction` | `left-to-right`, `right-to-left`, `top-to-bottom`, `bottom-to-top`; aliases `horizontal`, `vertical` | `left-to-right` |
+| `center` | Declared node ID; required by radial layout | none |
+| `radialShape` | `circle`, `polygon` | `circle` |
+| `radialStart` | `top`, `right`, `bottom`, `left` | `top` |
 | `theme` | `default`, `compact`, `cards`, `minimal` | `default` |
 | `imageWidth`, `imageHeight` | 16–512 | 96 |
 | `zoom` | `true` or `false` | `false` |
 | `controls` | `true` or `false`; requires zoom | `false` |
 
 Layout requires no editor-supplied coordinates. The bundled ResourceLoader module assigns layers, performs six bounded barycentric ordering sweeps, positions nodes, and draws SVG arrows. The viewport shrink-wraps ordinary graphs, becomes internally scrollable when a graph exceeds the available content width, and keeps its outer background transparent. Native touch scrolling provides panning; optional controls zoom, reset, or fit the graph.
+
+Radial layout places an explicitly selected node at the center, uses shortest graph distance for successive rings, and preserves source order around each ring. Circle mode staggers alternate rings; polygon mode retains common angular spokes. See [Usage.md](Usage.md#radial-layout) for a complete Eevee example and edge-case behavior.
 
 Selecting the target button on a node highlights all reachable previous and future paths. It works with pointer, touch, and keyboard input. `prefers-reduced-motion` disables transitions.
 
@@ -265,7 +271,7 @@ npm test
 
 `composer test` runs PHP parallel lint, MediaWiki CodeSniffer, and executable-bit checks. `composer phan` includes MediaWiki's taint-check plugin. `npm test` performs JavaScript syntax and security-invariant checks without downloading runtime libraries. The PHP test suites cover parsing, graph limits, cycles, Unicode, hostile payloads, escaped rendering, internal links, and missing files.
 
-The CI JavaScript job also opens [`tests/browser/edge-cases.html`](tests/browser/edge-cases.html) in headless Chrome. Its dependency-free browser harness checks every layout direction, narrow-container scrolling, transparent/dark theme defaults, white connector contrast, controls, highlighting, long text, disconnected components, malformed client metadata, cycles, reciprocal paths, parallel transitions, and repeated self-loops. Open that fixture in a browser for visual review while changing layout or CSS.
+The CI JavaScript job also opens [`tests/browser/edge-cases.html`](tests/browser/edge-cases.html) in headless Chrome. Its dependency-free browser harness checks every layered direction, centered circles, polygon and multi-ring placement, narrow-container scrolling, transparent/dark theme defaults, white connector contrast, controls, highlighting, long text, disconnected components, malformed client metadata, cycles, reciprocal paths, parallel transitions, and repeated self-loops. Open that fixture in a browser for visual review while changing layout or CSS.
 
 The parser and renderer use stable modern interfaces documented in MediaWiki's tag-extension, `extension.json`, ParserOutput, LinkRenderer, and file-repository references. No deprecated parser-test manifest registration is used.
 
