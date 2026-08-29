@@ -6,6 +6,13 @@ namespace MediaWiki\Extension\MonsterEvolution\Parser;
 
 use MediaWiki\Extension\MonsterEvolution\Security\EvolutionLimits;
 
+/**
+ * Bounded lexical scanner for statements and quoted attribute blocks.
+ *
+ * The scanner tracks quote/bracket state explicitly instead of using a single large
+ * regular expression. That makes multiline values, escapes, source lines, and early
+ * rejection of nested or unbalanced blocks deterministic and reviewable.
+ */
 final class EvolutionTokenizer {
 	public function __construct( private readonly EvolutionLimits $limits ) {
 	}
@@ -21,6 +28,8 @@ final class EvolutionTokenizer {
 		$escaped = false;
 		$length = strlen( $source );
 
+		// Each byte is visited once. UTF-8 validation happens before tokenization;
+		// structural characters are ASCII and safe to compare byte-by-byte.
 		for ( $offset = 0; $offset < $length; $offset++ ) {
 			$char = $source[$offset];
 			if ( $quote !== null ) {
@@ -75,6 +84,8 @@ final class EvolutionTokenizer {
 		$attributes = [];
 		$offset = 0;
 		$length = strlen( $source );
+		// Values are decoded into plain strings. They are still untrusted and must
+		// pass EvolutionValueValidator before entering the graph model.
 		while ( $offset < $length ) {
 			while ( $offset < $length && ctype_space( $source[$offset] ) ) {
 				$offset++;

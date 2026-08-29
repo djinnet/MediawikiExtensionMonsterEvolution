@@ -1,0 +1,22 @@
+== LumenTale starter lines ==
+
+This disconnected graph demonstrates several roots on one canvas. Verify later stages and conditions against the version covered by your wiki.
+
+<evolution direction="left-to-right" theme="compact">
+[node id="mewaii" name="Mewaii" link="Mewaii"]
+[node id="maidelly" name="Maidelly" link="Maidelly"]
+[node id="vortail" name="Vortail" link="Vortail"]
+[node id="furtex" name="Furtex" link="Furtex"]
+[node id="ozelash" name="Ozelash" link="Ozelash"]
+[node id="kouzear" name="Kouzear" link="Kouzear"]
+[node id="salabel" name="Salabel" link="Salabel"]
+[node id="vilender" name="Vilender" link="Vilender"]
+[node id="queccha" name="Queccha" link="Queccha"]
+[node id="quequator" name="Quequator" link="Quequator"]
+
+mewaii -> maidelly [type="level" label="Evolves"]
+vortail -> furtex [type="level" label="Evolves"]
+ozelash -> kouzear [type="level" label="Evolves"]
+salabel -> vilender [type="level" label="Evolves"]
+queccha -> quequator [type="level" label="Evolves"]
+</evolution>

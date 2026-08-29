@@ -62,4 +62,42 @@ final class EvolutionRendererTest extends MediaWikiIntegrationTestCase {
 		$this->assertStringNotContainsString( 'http://', $html );
 		$this->assertStringNotContainsString( 'https://', $html );
 	}
+
+	public function testMissingEdgeIconPreservesTextAndSafePositionMetadata(): void {
+		$graph = new EvolutionGraph( 'left-to-right', 'default', 96, 96, false, false );
+		$graph->addNode( new EvolutionNode( 'a', 'A' ) );
+		$graph->addNode( new EvolutionNode( 'b', 'B' ) );
+		$graph->addEdge( new EvolutionEdge(
+			source: 'a',
+			target: 'b',
+			label: 'Rare stone',
+			icon: 'Certainly Missing Edge Icon 12345.png',
+			iconPosition: 'above'
+		) );
+		$output = new ParserOutput();
+		$html = $this->getRenderer()->render( $graph, $output );
+
+		$this->assertStringContainsString( 'Rare stone', $html );
+		$this->assertStringContainsString( 'data-edge-icon-position="above"', $html );
+		$this->assertStringNotContainsString( 'mw-monster-evolution-edge-icon-source', $html );
+		$this->assertNotEmpty( $output->getImages() );
+	}
+
+	public function testEdgeLabelLinkUsesMediaWikiLinkRenderer(): void {
+		$graph = new EvolutionGraph( 'left-to-right', 'default', 96, 96, false, false );
+		$graph->addNode( new EvolutionNode( 'a', 'Eevee' ) );
+		$graph->addNode( new EvolutionNode( 'b', 'Flareon' ) );
+		$graph->addEdge( new EvolutionEdge(
+			source: 'a',
+			target: 'b',
+			label: 'Fire Stone',
+			link: 'Fire Stone'
+		) );
+		$output = new ParserOutput();
+		$html = $this->getRenderer()->render( $graph, $output );
+
+		$this->assertStringContainsString( 'mw-monster-evolution-edge-label-link', $html );
+		$this->assertStringContainsString( 'Fire Stone', $html );
+		$this->assertNotEmpty( $output->getLinks() );
+	}
 }

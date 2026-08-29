@@ -1,4 +1,4 @@
-# Verification record — 2026-08-25
+# Verification record — 2026-08-28
 
 ## Completed locally
 
@@ -22,8 +22,13 @@
 - Passed the release 1.0.2 script through MediaWiki 1.35.2's `JavaScriptMinifier`; SVG path spaces remained intact after minification.
 - Loaded release 1.0.3 on MediaWiki 1.35.2 and invoked the real `OutputPageParserOutput` hook with MonsterEvolution parser metadata. The final `OutputPage` contained both `ext.monsterEvolution` and `ext.monsterEvolution.styles`, covering the edit-preview path that had previously emitted only fallback HTML and CSS.
 - Browser-tested release 1.0.4's default palette and shrink-wrapped viewport with the five-node Awburn fixture: a 428-pixel graph occupied a 428-pixel viewport inside a 1200-pixel content area, the viewport background was transparent with no outer border, all four paths and labels rendered, and computed card/label colors were translucent dark with white text, strokes, and arrowheads.
-- Ran the new dependency-free browser edge-case harness in Chromium: 464 assertions passed at desktop width and again at a 390 × 844 viewport. It covered every direction, finite geometry, node collisions, canvas containment, internal mobile scrolling without page overflow, theme colors, connector contrast, zoom and highlighting, disconnected graphs, long names, malformed indexes, cycles, reciprocal edges, three parallel transitions, self-loops in every orientation, and a 24-node/48-edge dense cyclic stress graph. Visual review confirmed distinct curves/labels, visible white arrows on a light page, and self-loop content contained inside the scrollable canvas.
+- Ran the dependency-free browser edge-case harness in Chromium: 473 assertions passed at desktop width and again at a 390 × 844 viewport. It covered every direction, finite geometry, node and label collisions, canvas containment, internal mobile scrolling without page overflow, theme colors, connector contrast, zoom and highlighting, disconnected graphs, long names, malformed indexes, cycles, reciprocal edges, three parallel transitions, self-loops in every orientation, a 24-node/48-edge dense cyclic stress graph, edge icons above, beside, and without text, and server-rendered internal links around complete icon-and-text labels. Visual review exposed and then verified the fix for overlapping icon-bearing parallel labels.
 - Passed the release 1.0.4 script through MediaWiki 1.35.2's `JavaScriptMinifier`, and validated the `mediawiki.base` ResourceLoader dependency against the installed 1.35 core module registry.
+- Reran the expanded standalone suite after the 1.1.0 parser refactor and demo additions: 174 assertions passed, including every shipped `.wiki` demo, safe/unsafe edge icons and internal links, both icon positions, icon-only edges, and all preexisting boundary and security cases.
+- Scanned the expanded runtime with `tests/security/static-check.js`: all invariants passed across 18 PHP files, including the new resolver interfaces, centralized file-name policy, and value validator.
+- Loaded the refactored services through MediaWiki 1.35.2, parsed the new edge-icon model fields, and rendered a no-file graph through the real MediaWiki parser/renderer services. The compatibility smoke check passed.
+- Passed the 1.1.0 ResourceLoader script through MediaWiki 1.35.2's `JavaScriptMinifier` after the icon-label client changes.
+- Rendered an internally linked edge label through real MediaWiki 1.35.2 services and verified that the browser clones its server-produced anchor around both icon and text.
 
 ## Remaining environment-dependent verification
 

@@ -1,0 +1,20 @@
+== Eevee item branches ==
+
+Upload suitable local icon files first, or replace the filenames below. Missing icons are safely omitted.
+
+<evolution direction="left-to-right" theme="cards" zoom="true" controls="true">
+[node id="eevee" name="Eevee" link="Eevee"]
+[node id="vaporeon" name="Vaporeon" link="Vaporeon"]
+[node id="jolteon" name="Jolteon" link="Jolteon"]
+[node id="flareon" name="Flareon" link="Flareon"]
+[node id="leafeon" name="Leafeon" link="Leafeon"]
+[node id="glaceon" name="Glaceon" link="Glaceon"]
+
+eevee -> vaporeon [type="item" label="Water Stone" icon="Water Stone icon.png" iconPosition="above"]
+eevee -> jolteon [type="item" label="Thunder Stone" icon="Thunder Stone icon.png" iconPosition="next-to"]
+eevee -> flareon [type="item" label="Fire Stone" icon="Fire Stone icon.png" iconPosition="above" link="Fire Stone"]
+eevee -> leafeon [type="item" label="Leaf Stone" icon="Leaf Stone icon.png" iconPosition="next-to"]
+eevee -> glaceon [type="item" label="Ice Stone" icon="Ice Stone icon.png" iconPosition="above"]
+</evolution>
+
+This example uses modern main-series item methods. A wiki documenting a specific game should adjust requirements to that game.

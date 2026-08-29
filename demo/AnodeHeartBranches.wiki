@@ -1,0 +1,13 @@
+== Anode Heart branching requirements ==
+
+<evolution direction="left-to-right" theme="cards">
+[node id="fifou" name="Fifou" link="Fifou" subtitle="Wind starter"]
+[node id="zephyr" name="Zephyr" link="Zephyr"]
+[node id="fowlhoo" name="Fowlhoo" link="Fowlhoo"]
+[node id="talfou" name="Talfou" link="Talfou" subtitle="Fire starter"]
+[node id="skeltyr" name="Skeltyr" link="Skeltyr"]
+
+fifou -> zephyr [type="stat" label="Level 10" conditions="Speed >= 20"]
+fifou -> fowlhoo [type="condition" label="Level 10" conditions="Speed < 20"]
+talfou -> skeltyr [type="item" label="SkelBone equipped" icon="SkelBone icon.png" iconPosition="next-to"]
+</evolution>

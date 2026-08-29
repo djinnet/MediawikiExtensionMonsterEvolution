@@ -57,6 +57,33 @@ $expectErrorDetails = static function (
 };
 
 $parser = new EvolutionParser( new EvolutionLimits() );
+
+// Keep shipped documentation honest: every <evolution> block in every demo must
+// remain parseable as syntax evolves. This catches stale examples before release.
+$demoFiles = glob( dirname( __DIR__ ) . '/demo/*.wiki' ) ?: [];
+$assert( count( $demoFiles ) >= 7, 'The documented demo catalog contains at least seven examples.' );
+foreach ( $demoFiles as $demoFile ) {
+	$demoSource = file_get_contents( $demoFile );
+	$demoMatches = [];
+	preg_match_all( '/<evolution\b([^>]*)>(.*?)<\/evolution>/si', $demoSource, $demoMatches, PREG_SET_ORDER );
+	$assert( $demoMatches !== [], basename( $demoFile ) . ' contains an evolution block.' );
+	foreach ( $demoMatches as $demoMatch ) {
+		$demoAttributes = [];
+		$attributeMatches = [];
+		preg_match_all(
+			'/([A-Za-z][A-Za-z0-9]*)\s*=\s*"([^"]*)"/',
+			$demoMatch[1],
+			$attributeMatches,
+			PREG_SET_ORDER
+		);
+		foreach ( $attributeMatches as $attributeMatch ) {
+			$demoAttributes[$attributeMatch[1]] = $attributeMatch[2];
+		}
+		$demoGraph = $parser->parse( $demoMatch[2], $demoAttributes );
+		$assert( $demoGraph->getNodes() !== [], basename( $demoFile ) . ' parses into a nonempty graph.' );
+	}
+}
+
 $linear = $parser->parse( 'Slime -> Big Slime -> King Slime' );
 $assert( count( $linear->getNodes() ) === 3, 'Linear shorthand creates three nodes.' );
 $assert( count( $linear->getEdges() ) === 2, 'Linear shorthand creates two edges.' );
@@ -97,6 +124,48 @@ foreach ( $chainMetadata->getEdges() as $edge ) {
 	$assert( $edge->type === 'quest', 'Chain metadata is applied consistently to each generated edge.' );
 	$assert( $edge->label === 'Clear dungeon', 'Chain labels are applied consistently.' );
 	$assert( count( $edge->conditions ) === 2, 'Chain conditions are applied consistently.' );
+}
+
+$iconEdges = $parser->parse( <<<'WIKI'
+A -> B [label="Fire Stone" icon="Fire Stone.png" link="Item:Fire Stone"]
+B -> C [label="Moon Stone" icon="Moon Stone.svg" iconPosition="above"]
+C -> D [icon="Trade symbol.webp" iconPosition="next-to"]
+WIKI );
+$assert( $iconEdges->getEdges()[0]->icon === 'Fire Stone.png', 'An edge accepts a local icon file.' );
+$assert( $iconEdges->getEdges()[0]->link === 'Item:Fire Stone', 'An edge label accepts an internal link.' );
+$assert( $iconEdges->getEdges()[0]->iconPosition === 'next-to', 'Edge icons default beside the label.' );
+$assert( $iconEdges->getEdges()[1]->iconPosition === 'above', 'An edge icon may appear above its label.' );
+$assert( $iconEdges->getEdges()[2]->label === null, 'An icon-only edge does not invent label text.' );
+
+foreach ( [
+	'https://attacker.example/stone.png',
+	'../LocalSettings.php',
+	'File:Fire Stone.png',
+	'C:\\Windows\\win.ini',
+	'%2e%2e%2fsecret',
+] as $icon ) {
+	$expectError(
+		static fn () => $parser->parse( 'A -> B [icon="' . $icon . '"]' ),
+		"Unsafe edge icon is rejected: $icon"
+	);
+}
+foreach ( [ 'below', 'left', 'next', 'above label' ] as $position ) {
+	$expectError(
+		static fn () => $parser->parse( 'A -> B [iconPosition="' . $position . '"]' ),
+		"Invalid edge icon position is rejected: $position"
+	);
+}
+foreach ( [
+	'javascript:alert(1)',
+	'data:text/html,x',
+	'file:///etc/passwd',
+	'https://attacker.example/Fire_Stone',
+	'http://localhost/Fire_Stone',
+] as $link ) {
+	$expectError(
+		static fn () => $parser->parse( 'A -> B [link="' . $link . '"]' ),
+		"Unsafe edge-label link is rejected: $link"
+	);
 }
 
 $nodeMetadata = $parser->parse(

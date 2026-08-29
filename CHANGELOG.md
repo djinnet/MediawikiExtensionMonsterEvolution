@@ -1,9 +1,15 @@
 # Changelog
 
-## Unreleased
+## 1.1.0 — 2026-08-28
 
-- Expanded the standalone parser and security suite from 32 to 140 assertions, covering option aliases, all directions and themes, Boolean and dimension boundaries, multiline declarations, metadata, Unicode character limits, malformed syntax, source-line reporting, condition and attribute limits, and graph-model edge cases.
+- Added optional local-file icons to arrow labels with `above` and `next-to` layouts, safe MediaWiki repository resolution, icon-only labels, missing-file fallback, and accessible non-JavaScript behavior.
+- Added optional internal links around complete arrow labels, including their icons, using MediaWiki title resolution and server-rendered anchors with a linked no-JavaScript fallback.
+- Separated grammar construction from scalar validation, centralized local-file policy, introduced focused link/file resolver interfaces, and documented the codebase's SOLID boundaries and invariants.
+- Added newcomer-focused comments throughout parser, model, hook, resolver, renderer, layout, and service-composition code.
+- Added a detailed `Usage.md`, an architecture guide, and copyable Pokémon, Digimon, LumenTale, Coromon, Anode Heart, and Temtem demo charts without bundling third-party artwork.
+- Expanded the standalone parser and security suite from 32 to 174 assertions, including validation of every shipped demo and new icon/link syntax and security cases.
 - Added a dependency-free browser regression fixture with more than 100 layout, direction, interaction, responsive, theme, malformed-metadata, cycle, reciprocal-edge, parallel-edge, and self-loop assertions, and made it part of GitHub Actions through headless Chrome.
+- Added browser coverage for icons above, beside, and without label text, and prevented icon-bearing parallel labels from overlapping.
 - Ignored invalid negative client edge indexes instead of allowing malformed relationship metadata to interrupt enhancement.
 - Separated repeated transitions and repeated self-loops so their curves and labels no longer render directly on top of one another.
 - Reserved canvas space for self-loop arrows and labels, and added a subtle contrast shadow so white connectors remain visible on light wiki backgrounds.

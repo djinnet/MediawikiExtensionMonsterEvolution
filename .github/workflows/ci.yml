@@ -223,8 +223,8 @@ jobs:
           } );
           NODE
 
-          cp -R i18n resources src "$package_root/"
-          cp CHANGELOG.md LICENSE README.md SECURITY.md ServiceWiring.php composer.json extension.json package.json package-lock.json "$package_root/"
+          cp -R demo docs i18n resources src "$package_root/"
+          cp CHANGELOG.md LICENSE README.md SECURITY.md Usage.md ServiceWiring.php composer.json extension.json package.json package-lock.json "$package_root/"
 
           (
             cd build
@@ -246,6 +246,9 @@ jobs:
           unzip -q "$archive" -d build/verify
           test -f "build/verify/$EXTENSION_NAME/extension.json"
           test -f "build/verify/$EXTENSION_NAME/ServiceWiring.php"
+          test -f "build/verify/$EXTENSION_NAME/Usage.md"
+          test -f "build/verify/$EXTENSION_NAME/demo/PokemonEevee.wiki"
+          test -f "build/verify/$EXTENSION_NAME/docs/ARCHITECTURE.md"
           test -f "build/verify/$EXTENSION_NAME/resources/ext.monsterEvolution/evolution.js"
 
           node -e "const assert=require('assert'); const root='./build/verify/$EXTENSION_NAME/'; assert.equal(require(root+'extension.json').version, process.env.RELEASE_VERSION); assert.equal(require(root+'package.json').version, process.env.RELEASE_VERSION); assert.equal(require(root+'package-lock.json').version, process.env.RELEASE_VERSION);"

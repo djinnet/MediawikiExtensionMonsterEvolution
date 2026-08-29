@@ -1,4 +1,5 @@
 .mw-monster-evolution {
+	/* Public custom properties are the supported skin/admin theming surface. */
 	--monster-evolution-background: transparent;
 	--monster-evolution-card: rgba( 16, 22, 30, 0.82 );
 	--monster-evolution-color: #fff;
@@ -180,6 +181,10 @@
 .mw-monster-evolution-edge-label {
 	position: absolute;
 	z-index: 3;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.3rem;
 	max-width: 10rem;
 	padding: 0.15rem 0.35rem;
 	border: 1px solid var( --monster-evolution-border );
@@ -192,6 +197,43 @@
 	text-align: center;
 	transform: translate( -50%, -50% );
 	overflow-wrap: anywhere;
+}
+
+.mw-monster-evolution-edge-label--icon-above {
+	flex-direction: column;
+}
+
+.mw-monster-evolution-edge-label--icon-next-to {
+	flex-direction: row;
+}
+
+/* The server-rendered anchor is cloned as one unit so its href stays MediaWiki-owned. */
+.mw-monster-evolution-edge-label-link {
+	display: inline-flex;
+	flex-direction: inherit;
+	align-items: center;
+	justify-content: center;
+	gap: 0.3rem;
+}
+
+.mw-monster-evolution-edge-icon,
+.mw-monster-evolution-edge-icon-source img {
+	display: block;
+	width: 1.5rem;
+	height: 1.5rem;
+	flex: 0 0 auto;
+	object-fit: contain;
+}
+
+/* In the no-JavaScript fallback, keep an icon beside its textual relationship. */
+.mw-monster-evolution-edge-icon-source {
+	display: inline-flex;
+	margin-inline-end: 0.35rem;
+	vertical-align: middle;
+}
+
+.mw-monster-evolution-edge-label .mw-monster-evolution-edge-icon-source {
+	margin-inline-end: 0;
 }
 
 .mw-monster-evolution-relationships {

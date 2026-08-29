@@ -4,8 +4,15 @@ declare( strict_types=1 );
 
 namespace MediaWiki\Extension\MonsterEvolution;
 
+use MediaWiki\Extension\MonsterEvolution\Security\LocalFileNamePolicy;
 use UnexpectedValueException;
 
+/**
+ * Validates administrator configuration before MediaWiki builds runtime services.
+ *
+ * Failing early here produces a clear startup error instead of allowing invalid
+ * limits or defaults to surface later as parser or renderer failures.
+ */
 final class Registration {
 	private const DIRECTIONS = [
 		'left-to-right',
@@ -127,10 +134,8 @@ final class Registration {
 	}
 
 	private static function assertFileName( mixed $value, string $name ): void {
-		if ( !is_string( $value ) || strlen( $value ) > 255 ||
-			str_contains( $value, '..' ) || str_contains( $value, '/' ) ||
-			str_contains( $value, '\\' ) || str_contains( $value, ':' ) ||
-			preg_match( '/%(?:2e|2f|5c)/i', $value )
+		$policy = new LocalFileNamePolicy();
+		if ( !is_string( $value ) || strlen( $value ) > 255 || !$policy->isAllowed( $value, true )
 		) {
 			throw new UnexpectedValueException( "$name must be an empty value or a local file name." );
 		}

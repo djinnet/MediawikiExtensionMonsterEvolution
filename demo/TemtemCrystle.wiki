@@ -1,0 +1,12 @@
+== Crystle evolution line ==
+
+Temtem commonly counts levels gained after acquisition rather than only checking an absolute level. The label makes that distinction explicit.
+
+<evolution direction="bottom-to-top" theme="default">
+[node id="crystle" name="Crystle" link="Crystle"]
+[node id="sherald" name="Sherald" link="Sherald"]
+[node id="tortenite" name="Tortenite" link="Tortenite"]
+
+crystle -> sherald [type="level" label="Gain 30 levels"]
+sherald -> tortenite [type="level" label="Gain 21 levels"]
+</evolution>

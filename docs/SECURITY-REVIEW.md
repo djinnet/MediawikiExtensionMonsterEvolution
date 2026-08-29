@@ -1,6 +1,6 @@
 # Adversarial security review
 
-This review records the acceptance analysis for MonsterEvolution 1.0.4. Automated coverage lives in `tests/phpunit` and `tests/security`.
+This review records the acceptance analysis for MonsterEvolution 1.1.0. Automated coverage lives in `tests/phpunit`, `tests/security`, and the dependency-free browser harness.
 
 ## Trust boundaries
 
@@ -13,9 +13,9 @@ All tag content, tag options, parser-function arguments, template results, page 
 | Script, SVG, image-event, closing-tag, and attribute injection in text | Preserved as model text and contextually escaped by `Html::element`; never executable. |
 | Event, style, `src`, `href`, `srcdoc`, or unknown attributes | Rejected by explicit whitelists before a model is created. |
 | CSS payload in type/class/theme | Theme is an enumeration; type/class require a short lowercase semantic token and receive a fixed extension prefix. |
-| `javascript:`, `data:`, `file:`, remote and localhost links | Link prevalidation rejects executable/external forms; `TitleFactory` and `Title::isExternal()` provide the final internal-title boundary. |
-| Remote image, traversal, Windows/Unix path, encoded traversal | Image validation rejects protocols, colons, separators, traversal, and encoded separators; resolution is only through `RepoGroup`. No HTTP or filesystem API receives the value. |
-| DOM XSS in labels/tooltips | Client code reads text data and writes labels with `textContent`; tooltip markup is generated server-side with escaped text. |
+| `javascript:`, `data:`, `file:`, remote and localhost node/edge links | Shared link prevalidation rejects executable/external forms; `TitleFactory` and `Title::isExternal()` provide the final internal-title boundary. |
+| Remote image, traversal, Windows/Unix path, encoded traversal | One shared local-file policy protects node images, configured placeholders, and edge icons. It rejects protocols, colons, separators, traversal, and encoded separators; resolution is only through `RepoGroup`. No HTTP or filesystem API receives the value. |
+| DOM XSS in labels, links, icons, or tooltips | Client code writes unlinked labels with `textContent` and clones only MediaWiki-rendered internal anchors and local-file thumbnails; it never builds a URL. Tooltip markup is generated server-side with escaped text. |
 | Prototype pollution IDs | IDs are values in PHP associative arrays and browser graph collections use numeric indexes, `Map`, and `Set`; no attacker keys are assigned to object prototypes. |
 | Inline script/CSP bypass | No inline JavaScript, `eval`, `Function`, string event handlers, CDN, or `innerHTML`; all resources use ResourceLoader. |
 | Oversized input or values | Byte, character, attribute, node, edge, condition, ID, and graph-count limits produce controlled localized errors. Hard registration ranges prevent hostile administrator misconfiguration. |
@@ -38,6 +38,8 @@ All tag content, tag options, parser-function arguments, template results, page 
 - [x] Graph processing is bounded and cycle-aware.
 - [x] Parser-cache inputs and link/file dependencies were reviewed.
 - [x] JavaScript uses scoped DOM access and safe text insertion.
+- [x] Edge icons reuse node-image validation, file resolution, and cache dependencies.
+- [x] Edge links reuse node-link validation, MediaWiki title resolution, and link dependencies.
 - [x] Errors are localized and escaped.
 - [x] No secrets, write action, database query, or shell command exists.
 - [x] `SECURITY.md`, regression tests, static checks, and taint-analysis configuration exist.

@@ -34,7 +34,7 @@
 	"monsterevolution-error-unknown-node": "Unknown node “$1”.",
 	"monsterevolution-error-invalid-id": "Invalid node ID “$1”.",
 	"monsterevolution-error-invalid-link": "External and executable links are not allowed.",
-	"monsterevolution-error-invalid-image": "Images must be local MediaWiki file names.",
+	"monsterevolution-error-invalid-image": "Images and label icons must be local MediaWiki file names.",
 	"monsterevolution-error-unknown-attribute": "Unknown attribute “$1”.",
 	"monsterevolution-error-category": "Pages with Monster Evolution errors"
 }

@@ -34,7 +34,7 @@
 	"monsterevolution-error-unknown-node": "Error for an unknown endpoint. $1 is the rejected ID.",
 	"monsterevolution-error-invalid-id": "Error for an invalid ID. $1 is the rejected ID.",
 	"monsterevolution-error-invalid-link": "Error for a link value that looks like an external or executable URL.",
-	"monsterevolution-error-invalid-image": "Error for a value that is not a safe local file title.",
+	"monsterevolution-error-invalid-image": "Error for a node image or edge-label icon that is not a safe local file title.",
 	"monsterevolution-error-unknown-attribute": "Error for a non-whitelisted attribute. $1 is its name.",
 	"monsterevolution-error-category": "Tracking category name for pages containing invalid graphs. Do not include the namespace prefix."
 }

@@ -1,0 +1,10 @@
+== Toruga level chain ==
+
+<evolution direction="left-to-right" theme="compact">
+[node id="toruga" name="Toruga" link="Toruga"]
+[node id="embaval" name="Embaval" link="Embaval"]
+[node id="volcadon" name="Volcadon" link="Volcadon"]
+
+toruga -> embaval [type="level" label="Level 18"]
+embaval -> volcadon [type="level" label="Level 36"]
+</evolution>

@@ -6,6 +6,13 @@ namespace MediaWiki\Extension\MonsterEvolution\Model;
 
 use LogicException;
 
+/**
+ * Aggregate root for one parsed evolution definition.
+ *
+ * Nodes are keyed by stable editor-facing IDs while edges refer to those IDs. The
+ * renderer later maps them to compact numeric indexes for client markup. Mutation
+ * is restricted to parser-time add methods; callers receive read-only model values.
+ */
 final class EvolutionGraph {
 	/** @var array<string,EvolutionNode> */
 	private array $nodes = [];
@@ -34,6 +41,7 @@ final class EvolutionGraph {
 	}
 
 	public function addNode( EvolutionNode $node ): void {
+		// Defend the aggregate invariant even if a caller bypasses EvolutionParser.
 		if ( isset( $this->nodes[$node->id] ) ) {
 			throw new LogicException( "Duplicate node ID: {$node->id}" );
 		}

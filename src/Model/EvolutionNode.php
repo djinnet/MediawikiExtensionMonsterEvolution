@@ -4,6 +4,13 @@ declare( strict_types=1 );
 
 namespace MediaWiki\Extension\MonsterEvolution\Model;
 
+/**
+ * Immutable creature/form displayed as one graph card.
+ *
+ * File and link fields contain validated wiki titles, not URLs. Resolution is
+ * intentionally deferred until rendering so MediaWiki can register dependencies
+ * and respect shared repositories, namespaces, and local URL configuration.
+ */
 final class EvolutionNode {
 	/**
 	 * @param string $id

@@ -57,6 +57,54 @@ WIKI;
 		$this->assertSame( '火竜 🐉', $graph->getNodes()['fire']->name );
 	}
 
+	public function testEdgeLabelIconsAndPositions(): void {
+		$graph = $this->parser->parse( <<<'WIKI'
+A -> B [label="Fire Stone" icon="Fire Stone.png" link="Item:Fire Stone"]
+B -> C [label="Moon Stone" icon="Moon Stone.svg" iconPosition="above"]
+C -> D [icon="Trade.webp"]
+WIKI );
+		$this->assertSame( 'Fire Stone.png', $graph->getEdges()[0]->icon );
+		$this->assertSame( 'Item:Fire Stone', $graph->getEdges()[0]->link );
+		$this->assertSame( 'next-to', $graph->getEdges()[0]->iconPosition );
+		$this->assertSame( 'above', $graph->getEdges()[1]->iconPosition );
+		$this->assertNull( $graph->getEdges()[2]->label );
+	}
+
+	/** @dataProvider invalidEdgeIconProvider */
+	public function testUnsafeEdgeIconsAreRejected( string $icon ): void {
+		$this->expectException( EvolutionParseException::class );
+		$this->parser->parse( 'A -> B [icon="' . $icon . '"]' );
+	}
+
+	public static function invalidEdgeIconProvider(): array {
+		return [
+			'remote' => [ 'https://attacker.example/stone.png' ],
+			'traversal' => [ '../LocalSettings.php' ],
+			'namespace prefix' => [ 'File:Fire Stone.png' ],
+			'windows path' => [ 'C:\\Windows\\win.ini' ],
+		];
+	}
+
+	public function testInvalidEdgeIconPositionIsRejected(): void {
+		$this->expectException( EvolutionParseException::class );
+		$this->parser->parse( 'A -> B [iconPosition="below"]' );
+	}
+
+	/** @dataProvider invalidEdgeLinkProvider */
+	public function testExternalOrExecutableEdgeLinksAreRejected( string $link ): void {
+		$this->expectException( EvolutionParseException::class );
+		$this->parser->parse( 'A -> B [link="' . $link . '"]' );
+	}
+
+	public static function invalidEdgeLinkProvider(): array {
+		return [
+			'remote' => [ 'https://attacker.example/Fire_Stone' ],
+			'script' => [ 'javascript:alert(1)' ],
+			'data' => [ 'data:text/html,payload' ],
+			'local file URL' => [ 'file:///etc/passwd' ],
+		];
+	}
+
 	public function testReversibleCycleAndSelfLoopRemainFinite(): void {
 		$source = <<<'WIKI'
 A <-> B

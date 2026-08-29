@@ -2,6 +2,8 @@
 
 MonsterEvolution is a MediaWiki parser extension for interactive, accessible creature-evolution graphs. Its model is a directed graph—not a recursive tree—so it supports branches, merges, fusion, cycles, reversible changes, self-loops, multiple roots, and disconnected components.
 
+For editor-facing syntax and examples, start with [Usage.md](Usage.md). Contributors should also read [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), which describes component responsibilities, SOLID boundaries, model invariants, the progressive-enhancement contract, and safe feature-extension steps.
+
 The extension supports MediaWiki 1.35.2 or newer and requires PHP 8.1 or newer. Compatibility with 1.35.2 is provided for existing installations, but that MediaWiki branch is end-of-life and should be upgraded before an Internet-facing production deployment. MonsterEvolution has no runtime Composer or npm dependencies and makes no external network requests. Current release information is maintained at <https://www.mediawiki.org/wiki/Release_notes>.
 
 ## Installation
@@ -70,7 +72,7 @@ An edge uses `source -> target`. A chain is shorthand for multiple edges:
 A -> B -> C
 ```
 
-Supported edge attributes are `type`, `label`, and `conditions`:
+Supported edge attributes are `type`, `label`, `link`, `conditions`, `icon`, and `iconPosition`:
 
 ```wiki
 slime -> moon-slime [
@@ -79,6 +81,20 @@ slime -> moon-slime [
     conditions="Level >= 30; Time = Night; Item = Moon Stone"
 ]
 ```
+
+An optional local MediaWiki file can be displayed inside the floating label:
+
+```wiki
+slime -> moon-slime [
+    type="item"
+    label="Moon Stone"
+    icon="Moon Stone icon.png"
+    iconPosition="above"
+    link="Moon Stone"
+]
+```
+
+`link` accepts an internal wiki title and makes the complete icon-and-text label clickable. External and executable URLs are rejected. `iconPosition` accepts `next-to` (the default) or `above`. Icons are resolved as local files and rendered as 24 × 24 thumbnails. Missing icons are omitted without removing the arrow or label. See [Usage.md](Usage.md#5-arrows-labels-links-conditions-and-icons) for icon-only labels and complete behavior.
 
 `type` is an arbitrary validated semantic token, not a hard-coded franchise list. Common values include `level`, `item`, `friendship`, `location`, `time`, `quest`, `fusion`, `trade`, `gender`, `stat`, `skill`, `condition`, `special`, `temporary`, `form`, and `custom`. It becomes the safely prefixed class `mw-monster-evolution-edge-path--TYPE`, which administrators can style in `MediaWiki:Common.css`.
 
@@ -210,7 +226,7 @@ attacker-controlled wikitext
 - IDs and semantic class/type tokens use separate restrictive ASCII grammars. Display text supports Unicode.
 - HTML, CSS, script, event-handler, URL, filesystem-path, and arbitrary HTML attributes are never accepted.
 - Internal links use `TitleFactory` and `LinkRenderer`. Images use `TitleFactory`, `RepoGroup`, and MediaWiki thumbnail transforms. No value becomes a URL, filesystem path, or network request.
-- Output is created with MediaWiki's HTML helpers. User text is never passed as already-safe HTML. Client code uses `textContent`, `Map`, `Set`, numeric indexes, scoped selectors, and no `eval`, `innerHTML`, or global graph objects.
+- Output is created with MediaWiki's HTML helpers. User text is never passed as already-safe HTML. Client code uses `textContent`, `cloneNode`, `Map`, `Set`, numeric indexes, scoped selectors, and no `eval`, `innerHTML`, or global graph objects. Edge-label links and icons clone only MediaWiki-rendered anchors and local thumbnails; raw wikitext never becomes a URL.
 - Input, node, edge, condition, attribute, value, ID, and per-page graph limits are checked before or during bounded processing. The client layout is iterative with a fixed number of ordering sweeps.
 - Parser output is deterministic and uses normal link/file dependency registration. No cookies, request parameters, permissions, timestamps, random server IDs, or user-specific state affect cached HTML.
 - The extension is read-only: it defines no API write module, form submission, database table, privileged action, shell command, remote fetch, telemetry, or secret. Any future state-changing feature must use MediaWiki authorization and CSRF tokens server-side.
@@ -230,7 +246,7 @@ Malformed definitions produce localized, escaped errors with source lines when a
 
 ## Demo
 
-[`demo/ComplexEvolution.wiki`](demo/ComplexEvolution.wiki) demonstrates branching, merging, conditions, multiple roots, and fusion in one non-tree graph.
+The [`demo`](demo) directory contains generic and franchise-themed charts for branching, merging, conditions, icon labels, multiple roots, level chains, item requirements, stat requirements, and fusion. No third-party artwork is bundled.
 
 ## Development and testing
 

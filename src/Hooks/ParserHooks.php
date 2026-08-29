@@ -18,6 +18,13 @@ use ParserOutput;
 use PPFrame;
 use WeakMap;
 
+/**
+ * Thin MediaWiki adapter for the tag and parser-function entry points.
+ *
+ * Hook-specific preprocessing, graph-count accounting, and localized error markup
+ * live here. Parsing and rendering are delegated to focused services so neither
+ * domain component depends on Parser or OutputPage lifecycle details.
+ */
 final class ParserHooks implements ParserFirstCallInitHook, OutputPageParserOutputHook {
 	/** @var WeakMap<ParserOutput,int> */
 	private WeakMap $graphCounts;
@@ -82,6 +89,8 @@ final class ParserHooks implements ParserFirstCallInitHook, OutputPageParserOutp
 		}
 		$source = trim( $frame->expand( $arguments[0] ) );
 		$attributes = [];
+		// Parser-function arguments are PPNode objects and must be expanded by the
+		// supplied frame before they can share the normal definition pipeline.
 		foreach ( array_slice( $arguments, 1 ) as $argument ) {
 			$option = trim( $frame->expand( $argument ) );
 			$equals = strpos( $option, '=' );
@@ -118,6 +127,7 @@ final class ParserHooks implements ParserFirstCallInitHook, OutputPageParserOutp
 				'monsterevolution-error-graph-limit'
 			) );
 		}
+		// WeakMap scopes the count to ParserOutput without retaining completed parses.
 		$this->graphCounts[$output] = $count + 1;
 		try {
 			$graph = $this->evolutionParser->parse( $source, $attributes );

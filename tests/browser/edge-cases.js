@@ -25,7 +25,7 @@
 	}
 
 	function appendEdge( list, edge, index ) {
-		const item = createElement( 'li', 'mw-monster-evolution-edge', edge.summary || edge.label || 'Edge' );
+		const item = createElement( 'li', 'mw-monster-evolution-edge' );
 		item.setAttribute( 'data-edge-index', String( index ) );
 		if ( edge.source !== null ) {
 			item.setAttribute( 'data-source', String( edge.source ) );
@@ -35,6 +35,36 @@
 		}
 		item.setAttribute( 'data-edge-type', edge.type || 'custom' );
 		item.setAttribute( 'data-edge-label', edge.label || '' );
+		item.setAttribute( 'data-edge-icon-position', edge.iconPosition || 'next-to' );
+		let iconSource = null;
+		if ( edge.icon ) {
+			const source = createElement( 'span', 'mw-monster-evolution-edge-icon-source' );
+			const icon = document.createElement( 'img' );
+			icon.alt = '';
+			icon.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" ' +
+				'width="24" height="24"%3E%3Ccircle cx="12" cy="12" r="10" ' +
+				'fill="%236ea8ff"/%3E%3C/svg%3E';
+			source.appendChild( icon );
+			iconSource = source;
+		}
+		if ( edge.link ) {
+			const link = createElement( 'a', 'mw-monster-evolution-edge-label-link' );
+			link.href = edge.link;
+			if ( iconSource ) {
+				link.appendChild( iconSource );
+			}
+			if ( edge.label ) {
+				link.appendChild( createElement(
+					'span',
+					'mw-monster-evolution-edge-label-text',
+					edge.label
+				) );
+			}
+			item.appendChild( link );
+		} else if ( iconSource ) {
+			item.appendChild( iconSource );
+		}
+		item.appendChild( createElement( 'span', '', edge.summary || edge.label || 'Edge' ) );
 		list.appendChild( item );
 	}
 
@@ -125,9 +155,16 @@
 		direction: 'left-to-right',
 		nodes: [ 'Base form', 'Many-path target' ],
 		edges: [
-			{ source: 0, target: 1, label: 'Level' },
-			{ source: 0, target: 1, label: 'Item' },
-			{ source: 0, target: 1, label: 'Quest' }
+			{
+				source: 0,
+				target: 1,
+				label: 'Level',
+				icon: true,
+				iconPosition: 'next-to',
+				link: '/wiki/Fire_Stone'
+			},
+			{ source: 0, target: 1, label: 'Item', icon: true, iconPosition: 'above' },
+			{ source: 0, target: 1, icon: true, iconPosition: 'next-to' }
 		]
 	} );
 
@@ -264,6 +301,30 @@
 		const parallelLabels = Array.from( parallel.querySelectorAll( '.mw-monster-evolution-edge-label' ) )
 			.map( ( label ) => label.style.top + ':' + label.style.left );
 		assert( new Set( parallelLabels ).size === 3, 'parallel: repeated labels use distinct positions' );
+		const parallelLabelNodes = Array.from(
+			parallel.querySelectorAll( '.mw-monster-evolution-edge-label' )
+		);
+		for ( let index = 0; index < parallelLabelNodes.length; index++ ) {
+			for ( let other = index + 1; other < parallelLabelNodes.length; other++ ) {
+				assert( !intersects( rectangle( parallelLabelNodes[ index ] ), rectangle( parallelLabelNodes[ other ] ) ),
+					'parallel: icon labels ' + index + ' and ' + other + ' do not overlap' );
+			}
+		}
+		const iconLabels = parallel.querySelectorAll( '.mw-monster-evolution-edge-label' );
+		assert( parallel.querySelectorAll( '.mw-monster-evolution-edge-icon' ).length === 3,
+			'icons: server-rendered thumbnails are cloned into every visual label' );
+		assert( getComputedStyle( iconLabels[ 0 ] ).flexDirection === 'row',
+			'icons: next-to position uses a horizontal label layout' );
+		assert( getComputedStyle( iconLabels[ 1 ] ).flexDirection === 'column',
+			'icons: above position uses a vertical label layout' );
+		assert( iconLabels[ 2 ].querySelector( '.mw-monster-evolution-edge-label-text' ) === null,
+			'icons: an icon-only label renders without invented text' );
+		const linkedLabel = iconLabels[ 0 ].querySelector( '.mw-monster-evolution-edge-label-link' );
+		assert( linkedLabel !== null && linkedLabel.getAttribute( 'href' ) === '/wiki/Fire_Stone',
+			'links: the server-rendered internal anchor is cloned into the visual label' );
+		assert( linkedLabel !== null && linkedLabel.querySelector( 'img' ) !== null &&
+			linkedLabel.textContent === 'Level',
+			'links: the icon and label text are contained by one clickable anchor' );
 
 		const cycle = document.querySelector( '[data-case="cycle"]' );
 		const loopPaths = Array.from( cycle.querySelectorAll( '.mw-monster-evolution-edge-path' ) ).slice( -2 )

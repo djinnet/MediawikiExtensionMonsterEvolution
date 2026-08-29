@@ -9,17 +9,24 @@ use HtmlArmor;
 use MediaWiki\Extension\MonsterEvolution\Model\EvolutionEdge;
 use MediaWiki\Extension\MonsterEvolution\Model\EvolutionGraph;
 use MediaWiki\Extension\MonsterEvolution\Model\EvolutionNode;
-use MediaWiki\Extension\MonsterEvolution\Resolution\WikiFileResolver;
-use MediaWiki\Extension\MonsterEvolution\Resolution\WikiLinkResolver;
+use MediaWiki\Extension\MonsterEvolution\Resolution\EvolutionFileResolver;
+use MediaWiki\Extension\MonsterEvolution\Resolution\EvolutionLinkResolver;
 use MediaWiki\Html\Html;
 use MediaWiki\Linker\LinkRenderer;
 use MediaWiki\Linker\LinkTarget;
 use ParserOutput;
 
+/**
+ * Converts a validated graph model into progressive-enhancement HTML.
+ *
+ * The renderer deliberately receives narrow resolver interfaces. It owns markup and
+ * MediaWiki dependency registration, while title/file lookup stays behind adapters
+ * and interactive layout stays in the ResourceLoader client.
+ */
 final class EvolutionRenderer {
 	public function __construct(
-		private readonly WikiLinkResolver $linkResolver,
-		private readonly WikiFileResolver $fileResolver,
+		private readonly EvolutionLinkResolver $linkResolver,
+		private readonly EvolutionFileResolver $fileResolver,
 		private readonly LinkRenderer $linkRenderer,
 		private readonly bool $zoomEnabled,
 		private readonly string $missingImage
@@ -55,7 +62,7 @@ final class EvolutionRenderer {
 			'tabindex' => '0',
 		], $stage );
 		$controls = $this->renderControls( $graph );
-		$relationships = $this->renderRelationships( $graph->getEdges(), $graph, $indexes );
+		$relationships = $this->renderRelationships( $graph->getEdges(), $graph, $indexes, $output );
 
 		return Html::rawElement( 'div', [
 			'class' => 'mw-monster-evolution mw-monster-evolution--' . $graph->theme .
@@ -168,8 +175,14 @@ final class EvolutionRenderer {
 	 * @param EvolutionEdge[] $edges
 	 * @param EvolutionGraph $graph
 	 * @param array<string,int> $indexes
+	 * @param ParserOutput $output
 	 */
-	private function renderRelationships( array $edges, EvolutionGraph $graph, array $indexes ): string {
+	private function renderRelationships(
+		array $edges,
+		EvolutionGraph $graph,
+		array $indexes,
+		ParserOutput $output
+	): string {
 		$items = '';
 		$nodes = $graph->getNodes();
 		foreach ( $edges as $edgeIndex => $edge ) {
@@ -177,10 +190,48 @@ final class EvolutionRenderer {
 			$target = $nodes[$edge->target];
 			$summary = wfMessage( 'monsterevolution-relationship', $source->name, $target->name )
 				->inContentLanguage()->text();
+			$content = Html::element(
+				'span',
+				[ 'class' => 'mw-monster-evolution-edge-summary' ],
+				$summary
+			);
+
+			// This is both the readable no-JavaScript label and the source that the
+			// client clones into the floating label. Links and image URLs are therefore
+			// always produced by MediaWiki, never reconstructed from data attributes.
+			$labelContent = $this->renderEdgeIcon( $edge, $output );
 			if ( $edge->label !== null ) {
-				$summary .= ' — ' . $edge->label;
+				$labelContent .= Html::element(
+					'span',
+					[ 'class' => 'mw-monster-evolution-edge-label-text' ],
+					$edge->label
+				);
 			}
-			$content = Html::element( 'span', [ 'class' => 'mw-monster-evolution-edge-summary' ], $summary );
+			$linkTitle = $edge->link !== null ? $this->linkResolver->resolve( $edge->link ) : null;
+			if ( $linkTitle !== null ) {
+				$output->addLink( $linkTitle );
+				// A link must retain a visible activation target even when an icon-only
+				// label references a missing file. The validated wiki title is the least
+				// surprising fallback and is still encoded by Html::element.
+				if ( $labelContent === '' ) {
+					$labelContent = Html::element(
+						'span',
+						[ 'class' => 'mw-monster-evolution-edge-label-text' ],
+						$edge->link
+					);
+				}
+				$labelContent = $this->linkRenderer->makeLink(
+					$linkTitle,
+					new HtmlArmor( $labelContent ),
+					[
+						'class' => 'mw-monster-evolution-edge-label-link',
+						'aria-label' => $edge->label ?? $edge->link,
+					]
+				);
+			}
+			if ( $labelContent !== '' ) {
+				$content .= ' — ' . $labelContent;
+			}
 			if ( $edge->conditions !== [] ) {
 				$conditionItems = '';
 				foreach ( $edge->conditions as $condition ) {
@@ -198,6 +249,7 @@ final class EvolutionRenderer {
 				'data-target' => (string)$indexes[$edge->target],
 				'data-edge-type' => $edge->type,
 				'data-edge-label' => $edge->label ?? '',
+				'data-edge-icon-position' => $edge->iconPosition,
 			], $content );
 		}
 		return Html::rawElement( 'section', [
@@ -206,6 +258,39 @@ final class EvolutionRenderer {
 		], Html::element( 'h3', [ 'class' => 'mw-monster-evolution-visually-hidden' ],
 			wfMessage( 'monsterevolution-relationships-label' )->inContentLanguage()->text()
 		) . Html::rawElement( 'ul', [], $items ) );
+	}
+
+	/**
+	 * Render a small local-file thumbnail for an edge label.
+	 *
+	 * Missing files are recorded on ParserOutput for cache invalidation and then
+	 * omitted. The textual label and semantic relationship therefore remain usable
+	 * even when an editor mistypes an optional icon name.
+	 */
+	private function renderEdgeIcon( EvolutionEdge $edge, ParserOutput $output ): string {
+		if ( $edge->icon === null ) {
+			return '';
+		}
+		$file = $this->fileResolver->resolve( $edge->icon );
+		if ( $file === null ) {
+			$output->addImage( $edge->icon, false, false );
+			return '';
+		}
+
+		$this->registerFileDependency( $output, $file );
+		$thumbnail = $file->transform( [ 'width' => 24, 'height' => 24 ] );
+		if ( !$thumbnail || $thumbnail->isError() ) {
+			return '';
+		}
+		$image = $thumbnail->toHtml( [
+			'alt' => '',
+			'loading' => 'lazy',
+			'class' => 'mw-monster-evolution-edge-icon-image',
+		] );
+		return Html::rawElement( 'span', [
+			'class' => 'mw-monster-evolution-edge-icon-source',
+			'aria-hidden' => 'true',
+		], $image );
 	}
 
 	private function renderControls( EvolutionGraph $graph ): string {

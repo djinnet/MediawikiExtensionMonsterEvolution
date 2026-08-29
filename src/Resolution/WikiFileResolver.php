@@ -8,7 +8,8 @@ use File;
 use RepoGroup;
 use TitleFactory;
 
-final class WikiFileResolver {
+/** MediaWiki repository-backed adapter for EvolutionFileResolver. */
+final class WikiFileResolver implements EvolutionFileResolver {
 	public function __construct(
 		private readonly TitleFactory $titleFactory,
 		private readonly RepoGroup $repoGroup
@@ -16,6 +17,7 @@ final class WikiFileResolver {
 	}
 
 	public function resolve( string $name ): ?File {
+		// NS_FILE forces file-title semantics; isExternal blocks interwiki titles.
 		$title = $this->titleFactory->newFromText( $name, NS_FILE );
 		if ( $title === null || $title->getNamespace() !== NS_FILE || $title->isExternal() ) {
 			return null;

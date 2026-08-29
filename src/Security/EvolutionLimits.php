@@ -6,6 +6,12 @@ namespace MediaWiki\Extension\MonsterEvolution\Security;
 
 use InvalidArgumentException;
 
+/**
+ * Immutable resource budget shared by parser hooks, tokenizer, and graph parser.
+ *
+ * These are safety limits rather than presentation preferences. Centralizing them
+ * ensures every entry point applies the same bounds before work can grow.
+ */
 final class EvolutionLimits {
 	public function __construct(
 		public readonly int $maxInputBytes = 131072,

@@ -1,0 +1,16 @@
+== Agumon route example ==
+
+Digimon evolution routes vary substantially by game, virtual pet, anime continuity, and training conditions. This file demonstrates how one wiki can document a selected route rather than claiming a universal tree.
+
+<evolution direction="top-to-bottom" theme="minimal">
+[node id="agumon" name="Agumon" link="Agumon"]
+[node id="greymon" name="Greymon" link="Greymon"]
+[node id="metalgreymon" name="MetalGreymon" link="MetalGreymon"]
+[node id="wargreymon" name="WarGreymon" link="WarGreymon"]
+[node id="skullgreymon" name="SkullGreymon" link="SkullGreymon" form="Alternate route"]
+
+agumon -> greymon [type="level" label="Champion route"]
+greymon -> metalgreymon [type="condition" label="Ultimate route" conditions="Use the requirements for the documented game"]
+metalgreymon -> wargreymon [type="condition" label="Mega route" conditions="Use the requirements for the documented game"]
+greymon -> skullgreymon [type="special" label="Alternate route" conditions="Continuity- or game-specific conditions"]
+</evolution>

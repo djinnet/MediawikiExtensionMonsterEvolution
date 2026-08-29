@@ -5,6 +5,14 @@
 	const initialized = new WeakSet();
 	let instanceCounter = 0;
 
+	/*
+	 * The client is progressive enhancement only. Server HTML contains every node,
+	 * relationship, link, condition, and MediaWiki-resolved image. JavaScript reads
+	 * that inert representation, calculates geometry, and adds decorative SVG.
+	 * It never parses wikitext or constructs a URL from editor-controlled text.
+	 */
+
+	/** Create an SVG element without using an HTML parsing sink. */
 	function element( name, attributes ) {
 		const node = document.createElementNS( SVG_NS, name );
 		Object.keys( attributes ).forEach( ( key ) => {
@@ -26,18 +34,27 @@
 			const source = numberAttribute( edgeElement, 'data-source' );
 			const target = numberAttribute( edgeElement, 'data-target' );
 			if ( source >= 0 && target >= 0 && source < nodes.length && target < nodes.length ) {
+				const requestedIconPosition = edgeElement.getAttribute( 'data-edge-icon-position' );
 				edges.push( {
 					source,
 					target,
 					type: edgeElement.getAttribute( 'data-edge-type' ) || 'custom',
 					label: edgeElement.getAttribute( 'data-edge-label' ) || '',
-					element: edgeElement
+						iconPosition: requestedIconPosition === 'above' ? 'above' : 'next-to',
+						icon: edgeElement.querySelector( '.mw-monster-evolution-edge-icon-source img' ),
+						link: edgeElement.querySelector( '.mw-monster-evolution-edge-label-link' ),
+						element: edgeElement
 				} );
 			}
 		} );
 		return { nodes, edges };
 	}
 
+	/*
+	 * Assign nodes to layers with Kahn's topological process. Real evolution data
+	 * may contain cycles; when no zero-indegree node remains, the lowest unprocessed
+	 * node becomes a deterministic cycle break. The processed set guarantees termination.
+	 */
 	function layerGraph( nodeCount, edges ) {
 		const outgoing = Array.from( { length: nodeCount }, () => [] );
 		const incoming = Array.from( { length: nodeCount }, () => [] );
@@ -94,6 +111,7 @@
 	}
 
 	function reduceCrossings( groups, outgoing, incoming ) {
+		// Six alternating barycentric sweeps give stable, bounded crossing reduction.
 		for ( let sweep = 0; sweep < 6; sweep++ ) {
 			const forward = sweep % 2 === 0;
 			const start = forward ? 1 : groups.length - 2;
@@ -265,6 +283,35 @@
 		};
 	}
 
+	/**
+	 * Build an edge label from server-rendered pieces. The icon is cloned from a
+	 * MediaWiki-generated thumbnail, preserving repository URL handling and CSP.
+	 */
+	function populateEdgeLabel( label, edge ) {
+		if ( edge.link ) {
+			const link = edge.link.cloneNode( true );
+			const linkedIcon = link.querySelector( '.mw-monster-evolution-edge-icon-source img' );
+			if ( linkedIcon ) {
+				linkedIcon.classList.add( 'mw-monster-evolution-edge-icon' );
+			}
+			label.appendChild( link );
+			return;
+		}
+		if ( edge.icon ) {
+			const icon = edge.icon.cloneNode( true );
+			icon.removeAttribute( 'id' );
+			icon.classList.add( 'mw-monster-evolution-edge-icon' );
+			icon.setAttribute( 'aria-hidden', 'true' );
+			label.appendChild( icon );
+		}
+		if ( edge.label !== '' ) {
+			const text = document.createElement( 'span' );
+			text.className = 'mw-monster-evolution-edge-label-text';
+			text.textContent = edge.label;
+			label.appendChild( text );
+		}
+	}
+
 	function drawEdges( root, data, layout, sizes, markerId ) {
 		const svg = root.querySelector( '.mw-monster-evolution-svg' );
 		const canvas = root.querySelector( '.mw-monster-evolution-canvas' );
@@ -294,10 +341,12 @@
 
 		const pairs = new Set( data.edges.map( ( edge ) => edge.source + ':' + edge.target ) );
 		const parallelCounts = new Map();
+		const parallelHasIcons = new Map();
 		const parallelSeen = new Map();
 		data.edges.forEach( ( edge ) => {
 			const key = edge.source + ':' + edge.target;
 			parallelCounts.set( key, ( parallelCounts.get( key ) || 0 ) + 1 );
+			parallelHasIcons.set( key, parallelHasIcons.get( key ) || Boolean( edge.icon ) );
 		} );
 		data.edges.forEach( ( edge, edgeIndex ) => {
 			const key = edge.source + ':' + edge.target;
@@ -305,7 +354,12 @@
 			parallelSeen.set( key, occurrence + 1 );
 			const parallelCount = parallelCounts.get( key ) || 1;
 			const reverse = edge.source !== edge.target && pairs.has( edge.target + ':' + edge.source );
-			const parallelOffset = ( occurrence - ( parallelCount - 1 ) / 2 ) * 18;
+			// Icons make labels substantially taller or wider than text-only pills.
+			// Reserve larger parallel lanes for the whole directed pair so its curves
+			// and labels remain consistently aligned and do not collide.
+			const parallelSpacing = parallelHasIcons.get( key ) ?
+				( layout.horizontal ? 52 : 100 ) : 18;
+			const parallelOffset = ( occurrence - ( parallelCount - 1 ) / 2 ) * parallelSpacing;
 			const offset = parallelOffset + ( reverse ? ( edge.source < edge.target ? -14 : 14 ) : 0 );
 			const geometry = edgePath(
 				layout.positions[ edge.source ],
@@ -324,12 +378,15 @@
 				'marker-end': 'url(#' + markerId + ')'
 			} );
 			svg.appendChild( path );
-			if ( edge.label !== '' ) {
+			if ( edge.label !== '' || edge.icon || edge.link ) {
 				const label = document.createElement( 'div' );
-				label.className = 'mw-monster-evolution-edge-label';
+				label.className = 'mw-monster-evolution-edge-label ' +
+					'mw-monster-evolution-edge-label--icon-' + edge.iconPosition;
 				label.setAttribute( 'data-edge-index', String( edgeIndex ) );
-				label.textContent = edge.label;
-				label.title = edge.label;
+				populateEdgeLabel( label, edge );
+				if ( edge.label !== '' ) {
+					label.title = edge.label;
+				}
 				label.style.left = geometry.labelX + 'px';
 				label.style.top = geometry.labelY + 'px';
 				canvas.appendChild( label );
@@ -354,6 +411,8 @@
 		if ( !canvas || data.nodes.length === 0 ) {
 			return;
 		}
+		// Measurements are divided by the current zoom so relayout always works in
+		// unscaled canvas coordinates and does not compound previous transforms.
 		const sizes = data.nodes.map( ( node ) => ( {
 			width: Math.ceil( node.getBoundingClientRect().width / state.scale ),
 			height: Math.ceil( node.getBoundingClientRect().height / state.scale )
@@ -377,6 +436,7 @@
 		const activeNodes = new Set( [ selected ] );
 		const activeEdges = new Set();
 		const visit = ( adjacency ) => {
+			// Iterative traversal handles deep and cyclic graphs without call-stack risk.
 			const queue = [ selected ];
 			const visited = new Set( queue );
 			while ( queue.length > 0 ) {
@@ -421,6 +481,8 @@
 		if ( initialized.has( root ) ) {
 			return;
 		}
+		// MediaWiki can emit wikipage.content more than once for the same subtree.
+		// WeakSet prevents duplicate controls, SVG paths, observers, and listeners.
 		initialized.add( root );
 		const data = readGraph( root );
 		if ( data.nodes.length === 0 ) {
