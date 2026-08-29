@@ -185,9 +185,6 @@ final class EvolutionRenderer {
 	 * @param array<string,string> $attributes Link attributes
 	 */
 	private function renderHtmlLink( LinkTarget $target, string $html, array $attributes = [] ): string {
-		// Phan does not infer that the legacy global name is a runtime class alias on
-		// MediaWiki 1.44+, although LinkRenderer accepts the resulting object there.
-		// @phan-suppress-next-line PhanTypeMismatchArgumentSuperType
 		return $this->linkRenderer->makeLink( $target, new HtmlArmor( $html ), $attributes );
 	}
 
@@ -249,7 +246,7 @@ final class EvolutionRenderer {
 					$labelContent,
 					[
 						'class' => 'mw-monster-evolution-edge-label-link',
-						'aria-label' => $edge->label ?? $edge->link,
+						'aria-label' => $edge->label ?? $edge->link ?? '',
 					]
 				);
 			}
