@@ -12,13 +12,23 @@
 	 * It never parses wikitext or constructs a URL from editor-controlled text.
 	 */
 
-	/** Create an SVG element without using an HTML parsing sink. */
+	/**
+	 * Create an SVG element without using an HTML parsing sink.
+	 *
+	 * @param {string} name SVG element name
+	 * @param {Object<string, string|number>} attributes Element attributes
+	 * @return {SVGElement} Newly created SVG element
+	 */
 	function element( name, attributes ) {
 		const node = document.createElementNS( SVG_NS, name );
 		Object.keys( attributes ).forEach( ( key ) => {
 			node.setAttribute( key, String( attributes[ key ] ) );
 		} );
 		return node;
+	}
+
+	function forEachElement( elements, callback ) {
+		Array.prototype.forEach.call( elements, callback );
 	}
 
 	function numberAttribute( node, name ) {
@@ -192,9 +202,10 @@
 				position.y = height - margin - sizes[ node ].height - ( position.y - margin );
 			} );
 		}
-		const maximumSelfLoops = Math.max( 0, ...graph.outgoing.map( ( relations, node ) =>
-			relations.filter( ( relation ) => relation.node === node ).length
-		) );
+		const selfLoopCounts = graph.outgoing.map( ( relations, node ) => relations.filter(
+			( relation ) => relation.node === node
+		).length );
+		const maximumSelfLoops = Math.max( 0, ...selfLoopCounts );
 		if ( maximumSelfLoops > 0 ) {
 			const clearance = 72 + ( maximumSelfLoops - 1 ) * 16;
 			if ( horizontal ) {
@@ -211,6 +222,11 @@
 	 * Direction remains an edge semantic, but either incoming or outgoing neighbors
 	 * belong on the next visual ring. Disconnected nodes receive one outer ring so a
 	 * malformed or intentionally mixed graph remains finite and inspectable.
+	 *
+	 * @param {number} nodeCount Number of nodes in the graph
+	 * @param {Array<Object>} edges Directed graph edges
+	 * @param {number} center Selected center-node index
+	 * @return {Array<Array<number>>} Node indexes grouped by radial distance
 	 */
 	function radialGroups( nodeCount, edges, center ) {
 		const adjacency = Array.from( { length: nodeCount }, () => [] );
@@ -246,6 +262,13 @@
 	 * Position one node at the center and successive graph-distance groups on rings.
 	 * Ring radii account for the largest card diagonal and chord length, which gives
 	 * a conservative no-overlap bound even when cards have different dimensions.
+	 *
+	 * @param {Object} data Parsed graph data
+	 * @param {Array<Object>} sizes Measured node-card dimensions
+	 * @param {number} center Selected center-node index
+	 * @param {string} shape Radial distribution shape
+	 * @param {string} start Starting side for the first radial node
+	 * @return {Object} Calculated node positions and canvas dimensions
 	 */
 	function positionRadialNodes( data, sizes, center, shape, start ) {
 		const groups = radialGroups( sizes.length, data.edges, center );
@@ -255,17 +278,26 @@
 			bottom: Math.PI / 2,
 			left: Math.PI
 		};
-		const startAngle = startAngles[ start ] === undefined ? startAngles.top : startAngles[ start ];
+		let startAngle = startAngles[ start ];
+		if ( startAngle === undefined ) {
+			startAngle = startAngles.top;
+		}
 		const positions = new Array( sizes.length );
 		const radii = [ 0 ];
 		let previousRadius = 0;
-		let previousHalfDiagonal = Math.hypot( sizes[ center ].width, sizes[ center ].height ) / 2;
+		let previousHalfDiagonal = Math.hypot(
+			sizes[ center ].width,
+			sizes[ center ].height
+		) / 2;
 		groups.slice( 1 ).forEach( ( group, offset ) => {
 			const ring = offset + 1;
-			const largestDiagonal = Math.max( ...group.map( ( node ) =>
-				Math.hypot( sizes[ node ].width, sizes[ node ].height )
+			const diagonals = group.map( ( node ) => Math.hypot(
+				sizes[ node ].width,
+				sizes[ node ].height
 			) );
-			const separationRadius = previousRadius + previousHalfDiagonal + largestDiagonal / 2 + 84;
+			const largestDiagonal = Math.max( ...diagonals );
+			const separationRadius = previousRadius + previousHalfDiagonal +
+				largestDiagonal / 2 + 84;
 			const capacityRadius = group.length > 1 ?
 				( largestDiagonal + 36 ) / ( 2 * Math.sin( Math.PI / group.length ) ) : 0;
 			radii[ ring ] = Math.max( separationRadius, capacityRadius );
@@ -273,9 +305,11 @@
 			previousHalfDiagonal = largestDiagonal / 2;
 		} );
 
-		const largestHalfDiagonal = Math.max( ...sizes.map( ( size ) =>
-			Math.hypot( size.width, size.height ) / 2
-		) );
+		const halfDiagonals = sizes.map( ( size ) => Math.hypot(
+			size.width,
+			size.height
+		) / 2 );
+		const largestHalfDiagonal = Math.max( ...halfDiagonals );
 		const outerRadius = Math.max( 0, ...radii );
 		const selfLoops = new Array( sizes.length ).fill( 0 );
 		data.edges.forEach( ( edge ) => {
@@ -284,7 +318,8 @@
 			}
 		} );
 		const maximumSelfLoops = Math.max( 0, ...selfLoops );
-		const loopClearance = maximumSelfLoops > 0 ? 72 + ( maximumSelfLoops - 1 ) * 16 : 0;
+		const loopClearance = maximumSelfLoops > 0 ?
+			72 + ( maximumSelfLoops - 1 ) * 16 : 0;
 		const margin = 104 + loopClearance;
 		const extent = Math.max( 160, outerRadius + largestHalfDiagonal + margin );
 		const width = extent * 2;
@@ -313,27 +348,40 @@
 		return { positions, width, height, horizontal: false, radial: true, centerPoint };
 	}
 
-	function edgePath( source, target, sourceSize, targetSize, horizontal, offset, outerLane, loopOffset ) {
+	function edgePath(
+		source,
+		target,
+		sourceSize,
+		targetSize,
+		horizontal,
+		offset,
+		outerLane,
+		loopOffset
+	) {
 		if ( source === target ) {
 			if ( horizontal ) {
-				const x = source.x + sourceSize.width;
-				const y = source.y + sourceSize.height / 2;
-				const extent = 56 + loopOffset;
+				const horizontalX = source.x + sourceSize.width;
+				const horizontalY = source.y + sourceSize.height / 2;
+				const horizontalExtent = 56 + loopOffset;
 				return {
-					path: 'M ' + x + ' ' + y + ' C ' + ( x + extent ) + ' ' + ( y - 62 ) +
-						', ' + ( x + extent ) + ' ' + ( y + 62 ) + ', ' + x + ' ' + ( y + 5 ),
-					labelX: x + 48 + loopOffset,
-					labelY: y - 48
+					path: 'M ' + horizontalX + ' ' + horizontalY + ' C ' +
+						( horizontalX + horizontalExtent ) + ' ' + ( horizontalY - 62 ) +
+						', ' + ( horizontalX + horizontalExtent ) + ' ' + ( horizontalY + 62 ) +
+						', ' + horizontalX + ' ' + ( horizontalY + 5 ),
+					labelX: horizontalX + 48 + loopOffset,
+					labelY: horizontalY - 48
 				};
 			}
-			const x = source.x + sourceSize.width / 2;
-			const y = source.y + sourceSize.height;
-			const extent = 56 + loopOffset;
+			const verticalX = source.x + sourceSize.width / 2;
+			const verticalY = source.y + sourceSize.height;
+			const verticalExtent = 56 + loopOffset;
 			return {
-				path: 'M ' + x + ' ' + y + ' C ' + ( x - 62 ) + ' ' + ( y + extent ) +
-					', ' + ( x + 62 ) + ' ' + ( y + extent ) + ', ' + ( x + 5 ) + ' ' + y,
-				labelX: x + 48,
-				labelY: y + 48 + loopOffset
+				path: 'M ' + verticalX + ' ' + verticalY + ' C ' +
+					( verticalX - 62 ) + ' ' + ( verticalY + verticalExtent ) + ', ' +
+					( verticalX + 62 ) + ' ' + ( verticalY + verticalExtent ) + ', ' +
+					( verticalX + 5 ) + ' ' + verticalY,
+				labelX: verticalX + 48,
+				labelY: verticalY + 48 + loopOffset
 			};
 		}
 		const sourceCenter = {
@@ -345,9 +393,9 @@
 			y: target.y + targetSize.height / 2
 		};
 		if ( horizontal ) {
-			const forward = targetCenter.x >= sourceCenter.x;
-			const x1 = source.x + ( forward ? sourceSize.width : 0 );
-			const x2 = target.x + ( forward ? 0 : targetSize.width );
+			const horizontalForward = targetCenter.x >= sourceCenter.x;
+			const x1 = source.x + ( horizontalForward ? sourceSize.width : 0 );
+			const x2 = target.x + ( horizontalForward ? 0 : targetSize.width );
 			if ( Math.abs( targetCenter.x - sourceCenter.x ) > 420 ) {
 				return {
 					path: 'M ' + x1 + ' ' + sourceCenter.y + ' C ' + x1 + ' ' + ( outerLane + 24 ) +
@@ -358,12 +406,13 @@
 					labelY: outerLane
 				};
 			}
-			const middle = ( x1 + x2 ) / 2;
+			const horizontalMiddle = ( x1 + x2 ) / 2;
 			return {
-				path: 'M ' + x1 + ' ' + sourceCenter.y + ' C ' + middle + ' ' +
-					( sourceCenter.y + offset ) + ', ' + middle + ' ' + ( targetCenter.y + offset ) +
+				path: 'M ' + x1 + ' ' + sourceCenter.y + ' C ' + horizontalMiddle + ' ' +
+					( sourceCenter.y + offset ) + ', ' + horizontalMiddle + ' ' +
+					( targetCenter.y + offset ) +
 					', ' + x2 + ' ' + targetCenter.y,
-				labelX: middle,
+				labelX: horizontalMiddle,
 				labelY: ( sourceCenter.y + targetCenter.y ) / 2 + offset
 			};
 		}
@@ -390,7 +439,17 @@
 		};
 	}
 
-	/** Connect arbitrary radial cards at their rectangle boundaries. */
+	/**
+	 * Connect arbitrary radial cards at their rectangle boundaries.
+	 *
+	 * @param {Object} source Source-node position
+	 * @param {Object} target Target-node position
+	 * @param {Object} sourceSize Source-card dimensions
+	 * @param {Object} targetSize Target-card dimensions
+	 * @param {number} offset Perpendicular path offset
+	 * @param {number} loopOffset Repeated-loop offset
+	 * @return {Object} SVG path data and label coordinates
+	 */
 	function radialEdgePath( source, target, sourceSize, targetSize, offset, loopOffset ) {
 		if ( source === target ) {
 			return edgePath( source, target, sourceSize, targetSize, true, offset, 0, loopOffset );
@@ -432,6 +491,9 @@
 	/**
 	 * Build an edge label from server-rendered pieces. The icon is cloned from a
 	 * MediaWiki-generated thumbnail, preserving repository URL handling and CSP.
+	 *
+	 * @param {HTMLElement} label Visual label container
+	 * @param {Object} edge Parsed edge data
 	 */
 	function populateEdgeLabel( label, edge ) {
 		if ( edge.link ) {
@@ -458,7 +520,7 @@
 		}
 	}
 
-	function drawEdges( root, data, layout, sizes, markerId ) {
+	function drawEdges( root, data, layoutResult, sizes, markerId ) {
 		const svg = root.querySelector( '.mw-monster-evolution-svg' );
 		const canvas = root.querySelector( '.mw-monster-evolution-canvas' );
 		if ( !svg || !canvas ) {
@@ -467,7 +529,10 @@
 		while ( svg.firstChild ) {
 			svg.removeChild( svg.firstChild );
 		}
-		canvas.querySelectorAll( '.mw-monster-evolution-edge-label' ).forEach( ( label ) => label.remove() );
+		forEachElement(
+			canvas.querySelectorAll( '.mw-monster-evolution-edge-label' ),
+			( label ) => label.remove()
+		);
 		const definitions = element( 'defs', {} );
 		const marker = element( 'marker', {
 			id: markerId,
@@ -481,9 +546,9 @@
 		marker.appendChild( element( 'path', { d: 'M 0 0 L 10 5 L 0 10 z' } ) );
 		definitions.appendChild( marker );
 		svg.appendChild( definitions );
-		svg.setAttribute( 'viewBox', '0 0 ' + layout.width + ' ' + layout.height );
-		svg.setAttribute( 'width', String( layout.width ) );
-		svg.setAttribute( 'height', String( layout.height ) );
+		svg.setAttribute( 'viewBox', '0 0 ' + layoutResult.width + ' ' + layoutResult.height );
+		svg.setAttribute( 'width', String( layoutResult.width ) );
+		svg.setAttribute( 'height', String( layoutResult.height ) );
 
 		const pairs = new Set( data.edges.map( ( edge ) => edge.source + ':' + edge.target ) );
 		const parallelCounts = new Map();
@@ -504,22 +569,23 @@
 			// Reserve larger parallel lanes for the whole directed pair so its curves
 			// and labels remain consistently aligned and do not collide.
 			const parallelSpacing = parallelHasIcons.get( key ) ?
-				( layout.radial || layout.horizontal ? 52 : 100 ) : 18;
+				( layoutResult.radial || layoutResult.horizontal ? 52 : 100 ) : 18;
 			const parallelOffset = ( occurrence - ( parallelCount - 1 ) / 2 ) * parallelSpacing;
-			const offset = parallelOffset + ( reverse ? ( edge.source < edge.target ? -14 : 14 ) : 0 );
-			const geometry = layout.radial ? radialEdgePath(
-				layout.positions[ edge.source ],
-				layout.positions[ edge.target ],
+			const reverseOffset = reverse ? ( edge.source < edge.target ? -14 : 14 ) : 0;
+			const offset = parallelOffset + reverseOffset;
+			const geometry = layoutResult.radial ? radialEdgePath(
+				layoutResult.positions[ edge.source ],
+				layoutResult.positions[ edge.target ],
 				sizes[ edge.source ],
 				sizes[ edge.target ],
 				offset,
 				occurrence * 16
 			) : edgePath(
-				layout.positions[ edge.source ],
-				layout.positions[ edge.target ],
+				layoutResult.positions[ edge.source ],
+				layoutResult.positions[ edge.target ],
 				sizes[ edge.source ],
 				sizes[ edge.target ],
-				layout.horizontal,
+				layoutResult.horizontal,
 				offset,
 				18 + ( edgeIndex % 3 ) * 10,
 				occurrence * 16
@@ -533,6 +599,9 @@
 			svg.appendChild( path );
 			if ( edge.label !== '' || edge.icon || edge.link ) {
 				const label = document.createElement( 'div' );
+				// CSS classes:
+				// * mw-monster-evolution-edge-label--icon-above
+				// * mw-monster-evolution-edge-label--icon-next-to
 				label.className = 'mw-monster-evolution-edge-label ' +
 					'mw-monster-evolution-edge-label--icon-' + edge.iconPosition;
 				label.setAttribute( 'data-edge-index', String( edgeIndex ) );
@@ -574,7 +643,8 @@
 		let result;
 		if ( layoutMode === 'radial' ) {
 			const requestedCenter = numberAttribute( root, 'data-center' );
-			const center = requestedCenter >= 0 && requestedCenter < data.nodes.length ? requestedCenter : 0;
+			const hasRequestedCenter = requestedCenter >= 0 && requestedCenter < data.nodes.length;
+			const center = hasRequestedCenter ? requestedCenter : 0;
 			result = positionRadialNodes(
 				data,
 				sizes,
@@ -628,7 +698,7 @@
 				button.setAttribute( 'aria-pressed', index === selected ? 'true' : 'false' );
 			}
 		} );
-		root.querySelectorAll( '[data-edge-index]' ).forEach( ( edge ) => {
+		forEachElement( root.querySelectorAll( '[data-edge-index]' ), ( edge ) => {
 			const index = numberAttribute( edge, 'data-edge-index' );
 			edge.classList.toggle( 'mw-monster-evolution-is-dimmed', !activeEdges.has( index ) );
 		} );
@@ -636,10 +706,10 @@
 
 	function clearHighlight( root ) {
 		root.classList.remove( 'mw-monster-evolution--highlighting' );
-		root.querySelectorAll( '.mw-monster-evolution-is-dimmed' ).forEach( ( node ) => {
+		forEachElement( root.querySelectorAll( '.mw-monster-evolution-is-dimmed' ), ( node ) => {
 			node.classList.remove( 'mw-monster-evolution-is-dimmed' );
 		} );
-		root.querySelectorAll( '.mw-monster-evolution-highlight' ).forEach( ( button ) => {
+		forEachElement( root.querySelectorAll( '.mw-monster-evolution-highlight' ), ( button ) => {
 			button.setAttribute( 'aria-pressed', 'false' );
 		} );
 	}
@@ -683,7 +753,7 @@
 			} );
 		} );
 
-		root.querySelectorAll( '[data-zoom-action]' ).forEach( ( button ) => {
+		forEachElement( root.querySelectorAll( '[data-zoom-action]' ), ( button ) => {
 			button.addEventListener( 'click', () => {
 				const action = button.getAttribute( 'data-zoom-action' );
 				const viewport = root.querySelector( '.mw-monster-evolution-viewport' );
@@ -694,16 +764,19 @@
 				} else if ( action === 'reset' ) {
 					applyScale( root, state, 1 );
 				} else if ( action === 'fit' && viewport ) {
-					applyScale( root, state, Math.min( 1, ( viewport.clientWidth - 12 ) / state.width ) );
+					const fitScale = Math.min( 1, ( viewport.clientWidth - 12 ) / state.width );
+					applyScale( root, state, fitScale );
 				}
 			} );
 		} );
 
-		if ( 'ResizeObserver' in window ) {
+		if ( typeof ResizeObserver !== 'undefined' ) {
 			let resizeFrame = 0;
 			const observer = new ResizeObserver( () => {
-				window.cancelAnimationFrame( resizeFrame );
-				resizeFrame = window.requestAnimationFrame( () => layout( root, data, state, markerId ) );
+				cancelAnimationFrame( resizeFrame );
+				resizeFrame = requestAnimationFrame( () => {
+					layout( root, data, state, markerId );
+				} );
 			} );
 			observer.observe( root );
 		}
@@ -717,7 +790,7 @@
 		if ( root.matches && root.matches( '.mw-monster-evolution' ) ) {
 			initialize( root );
 		}
-		root.querySelectorAll( '.mw-monster-evolution' ).forEach( initialize );
+		forEachElement( root.querySelectorAll( '.mw-monster-evolution' ), initialize );
 	}
 
 	mw.hook( 'wikipage.content' ).add( initializeWithin );

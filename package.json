@@ -4,7 +4,15 @@
 	"private": true,
 	"description": "Static checks for MonsterEvolution ResourceLoader code",
 	"scripts": {
-		"test": "node --check resources/ext.monsterEvolution/evolution.js && node --check tests/browser/edge-cases.js && node tests/security/static-check.js"
+		"lint:js": "eslint resources tests --ext .js",
+		"lint:css": "stylelint \"resources/**/*.css\"",
+		"test": "npm run lint:js && npm run lint:css && node --check resources/ext.monsterEvolution/evolution.js && node --check tests/browser/edge-cases.js && node tests/security/static-check.js"
+	},
+	"devDependencies": {
+		"eslint": "8.57.1",
+		"eslint-config-wikimedia": "0.32.5",
+		"stylelint": "17.6.0",
+		"stylelint-config-wikimedia": "0.19.3"
 	},
 	"engines": {
 		"node": ">=20"

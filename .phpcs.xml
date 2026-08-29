@@ -2,8 +2,12 @@
 <ruleset>
 	<rule ref="MediaWiki" />
 	<file>ServiceWiring.php</file>
+	<file>.phan</file>
+	<file>i18n/MagicWords.php</file>
 	<file>src</file>
+	<file>tests/compatibility</file>
 	<file>tests/phpunit</file>
+	<file>tests/run-unit.php</file>
 	<arg name="extensions" value="php" />
 	<arg name="encoding" value="UTF-8" />
 	<exclude-pattern>vendor</exclude-pattern>

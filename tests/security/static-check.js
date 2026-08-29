@@ -8,6 +8,8 @@ const js = fs.readFileSync( path.join( root, 'resources/ext.monsterEvolution/evo
 const phpFiles = [];
 
 function collectPhp( directory ) {
+	// The directory is rooted in this repository and never contains user input.
+	// eslint-disable-next-line security/detect-non-literal-fs-filename
 	fs.readdirSync( directory, { withFileTypes: true } ).forEach( ( entry ) => {
 		const target = path.join( directory, entry.name );
 		if ( entry.isDirectory() ) {
@@ -19,6 +21,8 @@ function collectPhp( directory ) {
 }
 
 collectPhp( path.join( root, 'src' ) );
+// Every file was discovered beneath the fixed src directory above.
+// eslint-disable-next-line security/detect-non-literal-fs-filename
 const php = phpFiles.map( ( file ) => fs.readFileSync( file, 'utf8' ) ).join( '\n' );
 
 const forbiddenJs = [

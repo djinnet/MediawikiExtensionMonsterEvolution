@@ -66,6 +66,12 @@
 	text-align: center;
 }
 
+.mw-monster-evolution-node,
+.mw-monster-evolution-edge-path,
+.mw-monster-evolution-edge-label {
+	transition: opacity 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
+}
+
 .mw-monster-evolution--enhanced .mw-monster-evolution-node {
 	position: absolute;
 }
@@ -97,7 +103,7 @@
 }
 
 .mw-monster-evolution-node-name {
-	font-weight: 700;
+	font-weight: bold;
 	overflow-wrap: anywhere;
 }
 
@@ -242,7 +248,7 @@
 
 /* Keep the textual edge list available to assistive technology after the visual graph is ready. */
 .mw-monster-evolution--enhanced .mw-monster-evolution-relationships {
-	position: absolute !important;
+	position: absolute;
 	width: 1px;
 	height: 1px;
 	padding: 0;
@@ -306,14 +312,8 @@
 	opacity: 0.22;
 }
 
-.mw-monster-evolution-node,
-.mw-monster-evolution-edge-path,
-.mw-monster-evolution-edge-label {
-	transition: opacity 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
-}
-
 .mw-monster-evolution-visually-hidden {
-	position: absolute !important;
+	position: absolute;
 	width: 1px;
 	height: 1px;
 	padding: 0;
@@ -347,11 +347,11 @@
 	.mw-monster-evolution-highlight,
 	.mw-monster-evolution-svg,
 	.mw-monster-evolution-edge-label {
-		display: none !important;
+		display: none;
 	}
 
 	.mw-monster-evolution--enhanced .mw-monster-evolution-relationships {
-		position: static !important;
+		position: static;
 		width: auto;
 		height: auto;
 		margin: 0.75rem 0 0;
@@ -366,20 +366,22 @@
 	}
 
 	.mw-monster-evolution-stage,
-	.mw-monster-evolution-canvas {
-		display: flex !important;
-		position: static !important;
+	.mw-monster-evolution--enhanced .mw-monster-evolution-canvas {
+		display: flex;
+		position: static;
+		/* stylelint-disable declaration-no-important -- Override dimensions and transforms written inline by JavaScript. */
 		width: auto !important;
 		height: auto !important;
+		transform: none !important;
+		/* stylelint-enable declaration-no-important */
 		min-height: 0;
 		flex-wrap: wrap;
 		gap: 1rem;
 		padding: 0;
-		transform: none !important;
 	}
 
-	.mw-monster-evolution-node {
-		position: static !important;
+	.mw-monster-evolution--enhanced .mw-monster-evolution-node {
+		position: static;
 		break-inside: avoid;
 	}
 }

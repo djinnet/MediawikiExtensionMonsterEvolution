@@ -95,7 +95,7 @@ final class EvolutionRenderer {
 		$content = $this->renderImage( $node, $graph, $linkTitle, $output );
 		$name = Html::element( 'span', [ 'class' => 'mw-monster-evolution-node-name' ], $node->name );
 		$content .= $linkTitle !== null
-			? $this->linkRenderer->makeLink( $linkTitle, new HtmlArmor( $name ) )
+			? $this->renderHtmlLink( $linkTitle, $name )
 			: $name;
 		if ( $node->form !== null ) {
 			$content .= Html::element( 'span', [ 'class' => 'mw-monster-evolution-node-form' ], $node->form );
@@ -168,8 +168,27 @@ final class EvolutionRenderer {
 			$thumbnail->toHtml( [ 'alt' => $node->name, 'loading' => 'lazy' ] )
 		);
 		return $linkTitle !== null
-			? $this->linkRenderer->makeLink( $linkTitle, new HtmlArmor( $imageHtml ) )
+			? $this->renderHtmlLink( $linkTitle, $imageHtml )
 			: $imageHtml;
+	}
+
+	/**
+	 * Render an internal link whose body is already escaped HTML.
+	 *
+	 * MediaWiki 1.35 through 1.43 expose HtmlArmor in the global namespace.
+	 * MediaWiki 1.44 and later retain that name as a runtime alias of the namespaced
+	 * class. Keeping this version boundary in one method avoids spreading compatibility
+	 * conditionals throughout the renderer.
+	 *
+	 * @param LinkTarget $target Resolved MediaWiki link target
+	 * @param string $html Escaped link-body markup
+	 * @param array<string,string> $attributes Link attributes
+	 */
+	private function renderHtmlLink( LinkTarget $target, string $html, array $attributes = [] ): string {
+		// Phan does not infer that the legacy global name is a runtime class alias on
+		// MediaWiki 1.44+, although LinkRenderer accepts the resulting object there.
+		// @phan-suppress-next-line PhanTypeMismatchArgumentSuperType
+		return $this->linkRenderer->makeLink( $target, new HtmlArmor( $html ), $attributes );
 	}
 
 	private function registerFileDependency( ParserOutput $output, File $file ): void {
@@ -225,9 +244,9 @@ final class EvolutionRenderer {
 						$edge->link
 					);
 				}
-				$labelContent = $this->linkRenderer->makeLink(
+				$labelContent = $this->renderHtmlLink(
 					$linkTitle,
-					new HtmlArmor( $labelContent ),
+					$labelContent,
 					[
 						'class' => 'mw-monster-evolution-edge-label-link',
 						'aria-label' => $edge->label ?? $edge->link,

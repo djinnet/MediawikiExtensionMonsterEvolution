@@ -132,11 +132,12 @@ WIKI;
 	}
 
 	public function testRadialLayoutOptions(): void {
-		$graph = $this->parser->parse( <<<'WIKI'
+		$source = <<<'WIKI'
 [node id="eevee" name="Eevee"]
 [node id="flareon" name="Flareon"]
 eevee -> flareon
-WIKI, [
+WIKI;
+		$graph = $this->parser->parse( $source, [
 			'layout' => 'radial',
 			'center' => 'eevee',
 			'radialShape' => 'polygon',
@@ -152,11 +153,12 @@ WIKI, [
 	/** @dataProvider invalidRadialOptionsProvider */
 	public function testInvalidRadialOptionsAreRejected( array $options ): void {
 		$this->expectException( EvolutionParseException::class );
-		$this->parser->parse( <<<'WIKI'
+		$source = <<<'WIKI'
 [node id="eevee" name="Eevee"]
 [node id="flareon" name="Flareon"]
 eevee -> flareon
-WIKI, $options );
+WIKI;
+		$this->parser->parse( $source, $options );
 	}
 
 	public static function invalidRadialOptionsProvider(): array {

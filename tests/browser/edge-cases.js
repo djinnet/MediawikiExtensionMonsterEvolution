@@ -310,23 +310,32 @@
 
 		cases.forEach( ( section ) => {
 			const id = section.getAttribute( 'data-case' );
-			const root = section.querySelector( '.mw-monster-evolution' );
-			const canvas = root.querySelector( '.mw-monster-evolution-canvas' );
-			const canvasBounds = rectangle( canvas );
-			const nodes = Array.from( root.querySelectorAll( '.mw-monster-evolution-node' ) );
-			const paths = Array.from( root.querySelectorAll( '.mw-monster-evolution-edge-path' ) );
-			const labels = Array.from( root.querySelectorAll( '.mw-monster-evolution-edge-label' ) );
-			assert( root.classList.contains( 'mw-monster-evolution--enhanced' ), id + ': enhancement ran' );
-			assert( canvasBounds.width >= 320 && canvasBounds.height >= 180, id + ': bounded canvas exists' );
+			const caseRoot = section.querySelector( '.mw-monster-evolution' );
+			const caseCanvas = caseRoot.querySelector( '.mw-monster-evolution-canvas' );
+			const canvasBounds = rectangle( caseCanvas );
+			const nodes = Array.from( caseRoot.querySelectorAll( '.mw-monster-evolution-node' ) );
+			const paths = Array.from( caseRoot.querySelectorAll( '.mw-monster-evolution-edge-path' ) );
+			const labels = Array.from( caseRoot.querySelectorAll( '.mw-monster-evolution-edge-label' ) );
+			assert(
+				caseRoot.classList.contains( 'mw-monster-evolution--enhanced' ),
+				id + ': enhancement ran'
+			);
+			const hasBoundedCanvas = canvasBounds.width >= 320 && canvasBounds.height >= 180;
+			assert( hasBoundedCanvas, id + ': bounded canvas exists' );
 			paths.forEach( ( path, index ) => {
 				assert( !/(?:NaN|undefined|Infinity)/.test( path.getAttribute( 'd' ) || '' ),
 					id + ': path ' + index + ' contains finite coordinates' );
 			} );
 			nodes.forEach( ( node, index ) => {
 				const bounds = rectangle( node );
-				assert( bounds.left >= canvasBounds.left - 1 && bounds.right <= canvasBounds.right + 1 &&
-					bounds.top >= canvasBounds.top - 1 && bounds.bottom <= canvasBounds.bottom + 1,
-					id + ': node ' + index + ' stays inside the canvas' );
+				const horizontallyContained = bounds.left >= canvasBounds.left - 1 &&
+					bounds.right <= canvasBounds.right + 1;
+				const verticallyContained = bounds.top >= canvasBounds.top - 1 &&
+					bounds.bottom <= canvasBounds.bottom + 1;
+				assert(
+					horizontallyContained && verticallyContained,
+					id + ': node ' + index + ' stays inside the canvas'
+				);
 				for ( let other = index + 1; other < nodes.length; other++ ) {
 					assert( !intersects( bounds, rectangle( nodes[ other ] ) ),
 						id + ': nodes ' + index + ' and ' + other + ' do not overlap' );
@@ -334,9 +343,14 @@
 			} );
 			labels.forEach( ( label, index ) => {
 				const bounds = rectangle( label );
-				assert( bounds.left >= canvasBounds.left - 1 && bounds.right <= canvasBounds.right + 1 &&
-					bounds.top >= canvasBounds.top - 1 && bounds.bottom <= canvasBounds.bottom + 1,
-					id + ': label ' + index + ' stays inside the canvas' );
+				const horizontallyContained = bounds.left >= canvasBounds.left - 1 &&
+					bounds.right <= canvasBounds.right + 1;
+				const verticallyContained = bounds.top >= canvasBounds.top - 1 &&
+					bounds.bottom <= canvasBounds.bottom + 1;
+				assert(
+					horizontallyContained && verticallyContained,
+					id + ': label ' + index + ' stays inside the canvas'
+				);
 			} );
 		} );
 
@@ -348,8 +362,12 @@
 		].forEach( ( check ) => {
 			const nodes = document.querySelector( '[data-case="' + check[ 0 ] + '"]' )
 				.querySelectorAll( '.mw-monster-evolution-node' );
-			const difference = rectangle( nodes[ 1 ] )[ check[ 1 ] ] - rectangle( nodes[ 0 ] )[ check[ 1 ] ];
-			assert( Math.sign( difference ) === check[ 2 ], check[ 0 ] + ': source and target follow direction' );
+			const targetPosition = rectangle( nodes[ 1 ] )[ check[ 1 ] ];
+			const sourcePosition = rectangle( nodes[ 0 ] )[ check[ 1 ] ];
+			assert(
+				Math.sign( targetPosition - sourcePosition ) === check[ 2 ],
+				check[ 0 ] + ': source and target follow direction'
+			);
 		} );
 
 		const malformed = document.querySelector( '[data-case="malformed-data"]' );
@@ -368,7 +386,9 @@
 		);
 		for ( let index = 0; index < parallelLabelNodes.length; index++ ) {
 			for ( let other = index + 1; other < parallelLabelNodes.length; other++ ) {
-				assert( !intersects( rectangle( parallelLabelNodes[ index ] ), rectangle( parallelLabelNodes[ other ] ) ),
+				const currentBounds = rectangle( parallelLabelNodes[ index ] );
+				const otherBounds = rectangle( parallelLabelNodes[ other ] );
+				assert( !intersects( currentBounds, otherBounds ),
 					'parallel: icon labels ' + index + ' and ' + other + ' do not overlap' );
 			}
 		}
@@ -386,7 +406,7 @@
 			'links: the server-rendered internal anchor is cloned into the visual label' );
 		assert( linkedLabel !== null && linkedLabel.querySelector( 'img' ) !== null &&
 			linkedLabel.textContent === 'Level',
-			'links: the icon and label text are contained by one clickable anchor' );
+		'links: the icon and label text are contained by one clickable anchor' );
 
 		const radial = document.querySelector( '[data-case="radial-eevee"]' );
 		const radialCanvas = rectangle( radial.querySelector( '.mw-monster-evolution-canvas' ) );
@@ -396,7 +416,7 @@
 		const centerY = radialCenter.top + radialCenter.height / 2;
 		assert( Math.abs( centerX - ( radialCanvas.left + radialCanvas.width / 2 ) ) < 1 &&
 			Math.abs( centerY - ( radialCanvas.top + radialCanvas.height / 2 ) ) < 1,
-			'radial: selected Eevee node occupies the canvas center' );
+		'radial: selected Eevee node occupies the canvas center' );
 		const radialDistances = radialNodes.slice( 1 ).map( ( node ) => {
 			const bounds = rectangle( node );
 			return Math.hypot(
