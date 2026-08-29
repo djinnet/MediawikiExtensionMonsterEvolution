@@ -6,6 +6,10 @@ For editor-facing syntax and examples, start with [Usage.md](Usage.md). Contribu
 
 The extension supports MediaWiki 1.35.2 or newer and requires PHP 8.1 or newer. Compatibility with 1.35.2 is provided for existing installations, but that MediaWiki branch is end-of-life and should be upgraded before an Internet-facing production deployment. MonsterEvolution has no runtime Composer or npm dependencies and makes no external network requests. Current release information is maintained at <https://www.mediawiki.org/wiki/Release_notes>.
 
+# Dev's note:
+I want to be upfront about the whole project. It has been assist with AI, and so far it only helped with the development time and reduce the pain of making edge cases tests. The rest is still my code and the way of how I approached the extension. However I understand a lot of people's point of view with AI that it is bad, but this project wouldn't be possible without it. You can choose to included it or not, but it is not a proper replacement for the existing chart framework that already existed out there like mermaid mediawiki extension, so again I understand, but this one has focused on internal links and are targeted for wiki.gg sites, but people who are using it outside of wiki.gg are more than welcoming to use the mediawiki extension. I dont need credit, but will welcoming it. (also the Mediawiki Extension Monster Evolution = MEME. You are welcome.)
+
+
 ## Installation
 
 1. Copy this directory to `extensions/MonsterEvolution/` in a MediaWiki installation.
