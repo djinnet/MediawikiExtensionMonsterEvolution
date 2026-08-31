@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Added an administrator-controlled maintenance category for pages whose MonsterEvolution node or arrow-label links have invalid or nonexistent internal targets.
+
 ## 1.1.0 — 2026-08-28
 
 - Added optional local-file icons to arrow labels with `above` and `next-to` layouts, safe MediaWiki repository resolution, icon-only labels, missing-file fallback, and accessible non-JavaScript behavior.

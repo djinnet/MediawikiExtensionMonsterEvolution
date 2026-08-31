@@ -90,6 +90,10 @@ final class Registration {
 			self::getConfig( 'MonsterEvolutionEnableTrackingCategory' ),
 			'MonsterEvolutionEnableTrackingCategory'
 		);
+		self::assertBoolean(
+			self::getConfig( 'MonsterEvolutionEnableMissingPageTrackingCategory' ),
+			'MonsterEvolutionEnableMissingPageTrackingCategory'
+		);
 		self::assertFileName(
 			self::getConfig( 'MonsterEvolutionMissingImage' ),
 			'MonsterEvolutionMissingImage'

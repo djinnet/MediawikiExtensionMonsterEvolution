@@ -211,8 +211,17 @@ Set these after `wfLoadExtension()` in `LocalSettings.php`:
 | `$wgMonsterEvolutionEnableZoom` | `true` | Boolean administrator gate |
 | `$wgMonsterEvolutionMissingImage` | empty | Optional local file name |
 | `$wgMonsterEvolutionEnableTrackingCategory` | `true` | Add error tracking category |
+| `$wgMonsterEvolutionEnableMissingPageTrackingCategory` | `true` | Track graphs containing missing or invalid internal links |
 
 Configuration is validated during extension registration. Invalid numeric ranges or enumerations stop startup with a concise configuration error rather than causing unpredictable runtime behavior.
+
+When missing-page tracking is enabled, a page containing a red or unresolvable
+node/arrow-label link is added to `Category:Pages with missing Monster Evolution
+links`. Set the option to `false` after `wfLoadExtension()` to disable this category:
+
+```php
+$wgMonsterEvolutionEnableMissingPageTrackingCategory = false;
+```
 
 ## Accessibility and progressive enhancement
 

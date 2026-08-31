@@ -36,5 +36,6 @@
 	"monsterevolution-error-invalid-link": "Error for a link value that looks like an external or executable URL.",
 	"monsterevolution-error-invalid-image": "Error for a node image or edge-label icon that is not a safe local file title.",
 	"monsterevolution-error-unknown-attribute": "Error for a non-whitelisted attribute. $1 is its name.",
-	"monsterevolution-error-category": "Tracking category name for pages containing invalid graphs. Do not include the namespace prefix."
+	"monsterevolution-error-category": "Tracking category name for pages containing invalid graphs. Do not include the namespace prefix.",
+	"monsterevolution-missing-page-category": "Tracking category name for pages whose MonsterEvolution node or arrow-label links have invalid or nonexistent internal targets. Do not include the namespace prefix."
 }

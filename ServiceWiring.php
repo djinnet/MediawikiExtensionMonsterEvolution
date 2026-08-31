@@ -57,7 +57,8 @@ return [
 			new WikiFileResolver( $services->getTitleFactory(), $services->getRepoGroup() ),
 			$services->getLinkRendererFactory()->create(),
 			(bool)$config->get( 'MonsterEvolutionEnableZoom' ),
-			(string)$config->get( 'MonsterEvolutionMissingImage' )
+			(string)$config->get( 'MonsterEvolutionMissingImage' ),
+			(bool)$config->get( 'MonsterEvolutionEnableMissingPageTrackingCategory' )
 		);
 	},
 ];

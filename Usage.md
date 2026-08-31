@@ -29,6 +29,15 @@ slime -> water [label="Water Stone" icon="Water Stone.png" iconPosition="above"]
 
 The `id` is an internal chart identifier. Once any `[node]` declaration exists, every arrow endpoint must use a declared ID. This catches spelling mistakes instead of silently creating an unwanted node.
 
+Node links and arrow-label links that point to nonexistent pages remain normal
+MediaWiki red links. By default, the page containing the chart is also placed in
+`Category:Pages with missing Monster Evolution links`, allowing editors to find
+and repair those targets. Administrators can disable this maintenance category with:
+
+```php
+$wgMonsterEvolutionEnableMissingPageTrackingCategory = false;
+```
+
 ## 2. How a chart is structured
 
 A chart has three layers:

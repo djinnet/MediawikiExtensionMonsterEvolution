@@ -8,6 +8,8 @@ use MediaWiki\Extension\MonsterEvolution\Model\EvolutionEdge;
 use MediaWiki\Extension\MonsterEvolution\Model\EvolutionGraph;
 use MediaWiki\Extension\MonsterEvolution\Model\EvolutionNode;
 use MediaWiki\Extension\MonsterEvolution\Rendering\EvolutionRenderer;
+use MediaWiki\Extension\MonsterEvolution\Resolution\WikiFileResolver;
+use MediaWiki\Extension\MonsterEvolution\Resolution\WikiLinkResolver;
 use MediaWikiIntegrationTestCase;
 use ParserOutput;
 
@@ -15,6 +17,18 @@ use ParserOutput;
 final class EvolutionRendererTest extends MediaWikiIntegrationTestCase {
 	private function getRenderer(): EvolutionRenderer {
 		return $this->getServiceContainer()->getService( 'MonsterEvolution.Renderer' );
+	}
+
+	private function newRenderer( bool $missingPageTrackingEnabled ): EvolutionRenderer {
+		$services = $this->getServiceContainer();
+		return new EvolutionRenderer(
+			new WikiLinkResolver( $services->getTitleFactory() ),
+			new WikiFileResolver( $services->getTitleFactory(), $services->getRepoGroup() ),
+			$services->getLinkRendererFactory()->create(),
+			true,
+			'',
+			$missingPageTrackingEnabled
+		);
 	}
 
 	public function testHostileTextIsEscapedInEveryRenderedContext(): void {
@@ -74,6 +88,63 @@ final class EvolutionRendererTest extends MediaWikiIntegrationTestCase {
 		$this->assertStringContainsString( '<a ', $html );
 		$this->assertStringContainsString( 'Safe title', $html );
 		$this->assertNotEmpty( $output->getLinks() );
+	}
+
+	public function testMissingNodeLinkMarksOutputForTrackingCategory(): void {
+		$renderer = $this->newRenderer( true );
+		$graph = new EvolutionGraph( 'left-to-right', 'default', 96, 96, false, false );
+		$graph->addNode( new EvolutionNode(
+			'missing',
+			'Missing creature',
+			null,
+			'MonsterEvolution test missing target 7f052db4'
+		) );
+		$output = new ParserOutput();
+
+		$renderer->render( $graph, $output );
+
+		$this->assertTrue( $output->getExtensionData( 'MonsterEvolutionMissingPage' ) );
+		$this->assertNotEmpty( $output->getLinks() );
+	}
+
+	public function testInvalidEdgeLinkMarksOutputForTrackingCategory(): void {
+		$renderer = $this->newRenderer( true );
+		$graph = new EvolutionGraph( 'left-to-right', 'default', 96, 96, false, false );
+		$graph->addNode( new EvolutionNode( 'a', 'A' ) );
+		$graph->addNode( new EvolutionNode( 'b', 'B' ) );
+		$graph->addEdge( new EvolutionEdge( 'a', 'b', link: '[' ) );
+		$output = new ParserOutput();
+
+		$renderer->render( $graph, $output );
+
+		$this->assertTrue( $output->getExtensionData( 'MonsterEvolutionMissingPage' ) );
+	}
+
+	public function testKnownLinkDoesNotMarkOutputForTrackingCategory(): void {
+		$renderer = $this->newRenderer( true );
+		$graph = new EvolutionGraph( 'left-to-right', 'default', 96, 96, false, false );
+		$graph->addNode( new EvolutionNode( 'known', 'Known target', null, 'Special:Version' ) );
+		$output = new ParserOutput();
+
+		$renderer->render( $graph, $output );
+
+		$this->assertNull( $output->getExtensionData( 'MonsterEvolutionMissingPage' ) );
+	}
+
+	public function testDisabledMissingPageTrackingDoesNotMarkOutput(): void {
+		$renderer = $this->newRenderer( false );
+		$graph = new EvolutionGraph( 'left-to-right', 'default', 96, 96, false, false );
+		$graph->addNode( new EvolutionNode(
+			'missing',
+			'Missing creature',
+			null,
+			'MonsterEvolution test missing target 7f052db4'
+		) );
+		$output = new ParserOutput();
+
+		$renderer->render( $graph, $output );
+
+		$this->assertNull( $output->getExtensionData( 'MonsterEvolutionMissingPage' ) );
 	}
 
 	public function testMissingImageHasNoDirectImageUrl(): void {

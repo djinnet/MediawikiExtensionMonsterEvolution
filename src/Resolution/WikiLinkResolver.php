@@ -5,6 +5,7 @@ declare( strict_types=1 );
 namespace MediaWiki\Extension\MonsterEvolution\Resolution;
 
 use MediaWiki\Linker\LinkTarget;
+use Title;
 use TitleFactory;
 
 /** MediaWiki title-backed adapter for EvolutionLinkResolver. */
@@ -19,5 +20,11 @@ final class WikiLinkResolver implements EvolutionLinkResolver {
 			return null;
 		}
 		return $title;
+	}
+
+	public function isKnown( LinkTarget $target ): bool {
+		// resolve() only returns Title instances. Retaining the guard makes this
+		// adapter fail closed if a different LinkTarget implementation is supplied.
+		return $target instanceof Title && $target->isKnown();
 	}
 }

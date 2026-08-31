@@ -131,7 +131,11 @@ final class ParserHooks implements ParserFirstCallInitHook, OutputPageParserOutp
 		$this->graphCounts[$output] = $count + 1;
 		try {
 			$graph = $this->evolutionParser->parse( $source, $attributes );
-			return $this->renderer->render( $graph, $output );
+			$html = $this->renderer->render( $graph, $output );
+			if ( $output->getExtensionData( 'MonsterEvolutionMissingPage' ) === true ) {
+				$parser->addTrackingCategory( 'monsterevolution-missing-page-category' );
+			}
+			return $html;
 		} catch ( EvolutionParseException $exception ) {
 			return $this->renderError( $parser, $exception );
 		}

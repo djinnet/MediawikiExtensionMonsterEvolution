@@ -29,7 +29,8 @@ final class EvolutionRenderer {
 		private readonly EvolutionFileResolver $fileResolver,
 		private readonly LinkRenderer $linkRenderer,
 		private readonly bool $zoomEnabled,
-		private readonly string $missingImage
+		private readonly string $missingImage,
+		private readonly bool $missingPageTrackingEnabled
 	) {
 	}
 
@@ -84,10 +85,7 @@ final class EvolutionRenderer {
 		EvolutionGraph $graph,
 		ParserOutput $output
 	): string {
-		$linkTitle = $node->link !== null ? $this->linkResolver->resolve( $node->link ) : null;
-		if ( $linkTitle !== null ) {
-			$output->addLink( $linkTitle );
-		}
+		$linkTitle = $this->resolveLink( $node->link, $output );
 		$classes = [ 'mw-monster-evolution-node' ];
 		foreach ( $node->classes as $class ) {
 			$classes[] = 'mw-monster-evolution-node--custom-' . $class;
@@ -188,6 +186,34 @@ final class EvolutionRenderer {
 		return $this->linkRenderer->makeLink( $target, new HtmlArmor( $html ), $attributes );
 	}
 
+	/**
+	 * Resolve and register one editor-supplied internal link.
+	 *
+	 * A null result represents a title MediaWiki could not interpret. A resolved
+	 * but unknown target is a normal red link. Both cases opt the containing page
+	 * into the maintenance category, while the graph remains safe and readable.
+	 */
+	private function resolveLink( ?string $text, ParserOutput $output ): ?LinkTarget {
+		if ( $text === null ) {
+			return null;
+		}
+
+		$target = $this->linkResolver->resolve( $text );
+		if ( $target !== null ) {
+			$output->addLink( $target );
+		}
+		if (
+			$this->missingPageTrackingEnabled &&
+			( $target === null || !$this->linkResolver->isKnown( $target ) )
+		) {
+			// ParserHooks translates this renderer-owned fact into a localized
+			// tracking category because only Parser has the page parsing context.
+			$output->setExtensionData( 'MonsterEvolutionMissingPage', true );
+		}
+
+		return $target;
+	}
+
 	private function registerFileDependency( ParserOutput $output, File $file ): void {
 		$output->addImage( $file->getName(), $file->getTimestamp(), $file->getSha1() );
 	}
@@ -228,9 +254,8 @@ final class EvolutionRenderer {
 					$edge->label
 				);
 			}
-			$linkTitle = $edge->link !== null ? $this->linkResolver->resolve( $edge->link ) : null;
+			$linkTitle = $this->resolveLink( $edge->link, $output );
 			if ( $linkTitle !== null ) {
-				$output->addLink( $linkTitle );
 				// A link must retain a visible activation target even when an icon-only
 				// label references a missing file. The validated wiki title is the least
 				// surprising fallback and is still encoded by Html::element.
