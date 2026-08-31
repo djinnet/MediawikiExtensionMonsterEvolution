@@ -204,7 +204,7 @@ final class EvolutionRenderer {
 		}
 		if (
 			$this->missingPageTrackingEnabled &&
-			( $target === null || !$this->linkResolver->isKnown( $target ) )
+			( $target === null || !$this->linkResolver->isKnown( $text ) )
 		) {
 			// ParserHooks translates this renderer-owned fact into a localized
 			// tracking category because only Parser has the page parsing context.
