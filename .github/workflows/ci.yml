@@ -1,7 +1,10 @@
-name: CI and release
+name: CI
 
 on:
   push:
+    branches:
+      - main
+      - REL1_35
   pull_request:
   workflow_dispatch:
   schedule:
@@ -9,9 +12,6 @@ on:
 
 permissions:
   contents: read
-
-env:
-  EXTENSION_NAME: MonsterEvolution
 
 jobs:
   php-static:
@@ -25,7 +25,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: wikimedia/mediawiki
-          ref: REL1_45
+          ref: REL1_46
           path: mediawiki
       - uses: shivammathur/setup-php@v2
         with:
@@ -44,7 +44,7 @@ jobs:
         working-directory: extension
       - run: composer audit --locked
         working-directory: extension
-      - name: Run Phan against MediaWiki REL1_45
+      - name: Run Phan against MediaWiki REL1_46
         run: composer phan
         working-directory: extension
         env:
@@ -137,167 +137,3 @@ jobs:
           printf '%s\n' "$output"
           grep -Fq 'MonsterEvolution ResourceLoader dependencies resolved.' <<< "$output"
         working-directory: mediawiki
-
-  release:
-    name: Package and publish release
-    needs:
-      - php-static
-      - javascript
-      - mediawiki-tests
-    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref_name == github.event.repository.default_branch)
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    concurrency:
-      group: monster-evolution-release-${{ github.repository }}
-      cancel-in-progress: false
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-
-      - name: Select the first unused release version
-        id: version
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          base_version="$(node -p "require('./package.json').version")"
-          extension_version="$(node -p "require('./extension.json').version")"
-
-          if [[ ! "$base_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "package.json version must use numeric MAJOR.MINOR.PATCH format; got: $base_version" >&2
-            exit 1
-          fi
-
-          if [[ "$extension_version" != "$base_version" ]]; then
-            echo "package.json ($base_version) and extension.json ($extension_version) must start at the same version." >&2
-            exit 1
-          fi
-
-          IFS='.' read -r major minor patch <<< "$base_version"
-          candidate="$base_version"
-
-          while git ls-remote --exit-code --tags origin "refs/tags/$candidate" >/dev/null 2>&1; do
-            patch=$((patch + 1))
-            candidate="$major.$minor.$patch"
-          done
-
-          echo "version=$candidate" >> "$GITHUB_OUTPUT"
-          echo "tag=$candidate" >> "$GITHUB_OUTPUT"
-          echo "Selected release version $candidate"
-
-      - name: Build release archive
-        shell: bash
-        env:
-          RELEASE_VERSION: ${{ steps.version.outputs.version }}
-        run: |
-          set -euo pipefail
-
-          package_root="build/$EXTENSION_NAME"
-          archive="$EXTENSION_NAME-$RELEASE_VERSION.zip"
-          mkdir -p "$package_root" dist
-
-          node <<'NODE'
-          const fs = require( 'fs' );
-          const path = require( 'path' );
-          const version = process.env.RELEASE_VERSION;
-
-          function updateJson( file, update ) {
-            const target = path.join( process.cwd(), file );
-            const data = JSON.parse( fs.readFileSync( target, 'utf8' ) );
-            update( data );
-            fs.writeFileSync( target, JSON.stringify( data, null, '\t' ) + '\n' );
-          }
-
-          updateJson( 'extension.json', ( data ) => { data.version = version; } );
-          updateJson( 'package.json', ( data ) => { data.version = version; } );
-          updateJson( 'package-lock.json', ( data ) => {
-            data.version = version;
-            if ( data.packages && data.packages[''] ) {
-              data.packages[''].version = version;
-            }
-          } );
-          NODE
-
-          cp -R demo docs i18n resources src "$package_root/"
-          cp CHANGELOG.md LICENSE README.md SECURITY.md Usage.md ServiceWiring.php composer.json extension.json package.json package-lock.json "$package_root/"
-
-          (
-            cd build
-            zip -q -9 -r "../dist/$archive" "$EXTENSION_NAME"
-          )
-          (
-            cd dist
-            sha256sum "$archive" > "$archive.sha256"
-          )
-
-      - name: Verify release archive
-        shell: bash
-        env:
-          RELEASE_VERSION: ${{ steps.version.outputs.version }}
-        run: |
-          set -euo pipefail
-
-          archive="dist/$EXTENSION_NAME-$RELEASE_VERSION.zip"
-          unzip -q "$archive" -d build/verify
-          test -f "build/verify/$EXTENSION_NAME/extension.json"
-          test -f "build/verify/$EXTENSION_NAME/ServiceWiring.php"
-          test -f "build/verify/$EXTENSION_NAME/Usage.md"
-          test -f "build/verify/$EXTENSION_NAME/demo/PokemonEevee.wiki"
-          test -f "build/verify/$EXTENSION_NAME/docs/ARCHITECTURE.md"
-          test -f "build/verify/$EXTENSION_NAME/resources/ext.monsterEvolution/evolution.js"
-
-          node -e "const assert=require('assert'); const root='./build/verify/$EXTENSION_NAME/'; assert.equal(require(root+'extension.json').version, process.env.RELEASE_VERSION); assert.equal(require(root+'package.json').version, process.env.RELEASE_VERSION); assert.equal(require(root+'package-lock.json').version, process.env.RELEASE_VERSION);"
-          unzip -t "$archive"
-          (
-            cd dist
-            sha256sum --check "$EXTENSION_NAME-$RELEASE_VERSION.zip.sha256"
-          )
-
-      - name: Upload verified workflow artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: MonsterEvolution-${{ steps.version.outputs.version }}
-          path: |
-            dist/MonsterEvolution-${{ steps.version.outputs.version }}.zip
-            dist/MonsterEvolution-${{ steps.version.outputs.version }}.zip.sha256
-          if-no-files-found: error
-
-      - name: Create tag and GitHub release
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ steps.version.outputs.tag }}
-          RELEASE_VERSION: ${{ steps.version.outputs.version }}
-        run: |
-          set -euo pipefail
-
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add extension.json package.json package-lock.json
-
-          if ! git diff --cached --quiet; then
-            git commit -m "Prepare $EXTENSION_NAME $RELEASE_VERSION"
-          fi
-
-          git tag "$RELEASE_TAG"
-          git push origin "refs/tags/$RELEASE_TAG"
-
-          gh release create "$RELEASE_TAG" \
-            "dist/$EXTENSION_NAME-$RELEASE_VERSION.zip" \
-            "dist/$EXTENSION_NAME-$RELEASE_VERSION.zip.sha256" \
-            --verify-tag \
-            --title "$EXTENSION_NAME $RELEASE_VERSION" \
-            --generate-notes
-
-          {
-            echo "### Published $EXTENSION_NAME $RELEASE_VERSION"
-            echo
-            echo "Tag: \`$RELEASE_TAG\`"
-            echo
-            echo "Archive: \`$EXTENSION_NAME-$RELEASE_VERSION.zip\`"
-          } >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,21 @@
+name: Deploy MediaWiki 1.46 release
+
+on:
+  push:
+    tags:
+      - 'REL_1_46_*'
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    uses: ./.github/workflows/deploy-release.yml
+    with:
+      source_branch: main
+      mediawiki_branch: REL1_46
+      mediawiki_version: '1.46'
+      php_version: '8.3'
+      tag_prefix: REL_1_46_
+    permissions:
+      contents: write

@@ -1,0 +1,275 @@
+name: Verified tagged deployment
+
+on:
+  workflow_call:
+    inputs:
+      source_branch:
+        description: Repository branch whose head must carry the release tag.
+        required: true
+        type: string
+      mediawiki_branch:
+        description: MediaWiki core branch used for compatibility verification.
+        required: true
+        type: string
+      mediawiki_version:
+        description: Human-readable MediaWiki release line.
+        required: true
+        type: string
+      php_version:
+        description: PHP version used by the compatibility job.
+        required: true
+        type: string
+      tag_prefix:
+        description: Required release-tag prefix, including its final underscore.
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+env:
+  EXTENSION_NAME: MonsterEvolution
+
+jobs:
+  validate-tag:
+    name: Validate release tag and branch
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Require the exact tag format and branch head
+        shell: bash
+        env:
+          SOURCE_BRANCH: ${{ inputs.source_branch }}
+          TAG_PREFIX: ${{ inputs.tag_prefix }}
+        run: |
+          set -euo pipefail
+
+          release_tag="$GITHUB_REF_NAME"
+          expected_pattern="^${TAG_PREFIX}[0-9]{2}$"
+          if [[ ! "$release_tag" =~ $expected_pattern ]]; then
+            echo "Tag must match ${TAG_PREFIX}YY where YY is exactly two digits; got: $release_tag" >&2
+            exit 1
+          fi
+
+          git fetch --no-tags origin "+refs/heads/$SOURCE_BRANCH:refs/remotes/origin/$SOURCE_BRANCH"
+          tag_commit="$(git rev-parse "$GITHUB_SHA^{commit}")"
+          branch_commit="$(git rev-parse "refs/remotes/origin/$SOURCE_BRANCH^{commit}")"
+          if [[ "$tag_commit" != "$branch_commit" ]]; then
+            echo "Tag $release_tag must point to the current head of $SOURCE_BRANCH." >&2
+            echo "Tag commit:    $tag_commit" >&2
+            echo "Branch commit: $branch_commit" >&2
+            exit 1
+          fi
+
+  php-static:
+    name: PHP static checks against current core
+    needs: validate-tag
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: extension
+      - uses: actions/checkout@v4
+        with:
+          repository: wikimedia/mediawiki
+          ref: REL1_46
+          path: mediawiki
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: ast, intl, mbstring
+          coverage: none
+      - uses: ramsey/composer-install@v3
+        with:
+          working-directory: extension
+      - name: Install MediaWiki development dependencies
+        run: composer install --no-interaction --prefer-dist
+        working-directory: mediawiki
+      - run: composer validate --strict
+        working-directory: extension
+      - run: composer test
+        working-directory: extension
+      - run: composer audit --locked
+        working-directory: extension
+      - name: Run Phan against MediaWiki REL1_46
+        run: composer phan
+        working-directory: extension
+        env:
+          MW_INSTALL_PATH: ${{ github.workspace }}/mediawiki
+
+  javascript:
+    name: JavaScript, CSS, and browser checks
+    needs: validate-tag
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm test
+      - name: Run browser layout edge cases
+        shell: bash
+        run: |
+          set -euo pipefail
+          test_page="file://${GITHUB_WORKSPACE}/tests/browser/edge-cases.html"
+          google-chrome --headless=new --no-sandbox --disable-gpu --window-size=1280,900 \
+            --allow-file-access-from-files --virtual-time-budget=5000 \
+            --dump-dom "$test_page" > browser-results-desktop.html
+          google-chrome --headless=new --no-sandbox --disable-gpu --window-size=390,844 \
+            --allow-file-access-from-files --virtual-time-budget=5000 \
+            --dump-dom "$test_page" > browser-results-mobile.html
+          grep -Fq 'data-test-status="passed"' browser-results-desktop.html
+          grep -Eq 'data-assertions="[1-9][0-9]{2,}"' browser-results-desktop.html
+          grep -Fq 'data-test-status="passed"' browser-results-mobile.html
+          grep -Eq 'data-assertions="[1-9][0-9]{2,}"' browser-results-mobile.html
+
+  compatibility:
+    name: MediaWiki ${{ inputs.mediawiki_version }} / PHP ${{ inputs.php_version }}
+    needs: validate-tag
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: wikimedia/mediawiki
+          ref: ${{ inputs.mediawiki_branch }}
+          path: mediawiki
+      - uses: actions/checkout@v4
+        with:
+          path: mediawiki/extensions/MonsterEvolution
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ inputs.php_version }}
+          extensions: intl, mbstring, sqlite3
+          coverage: none
+      - name: Install MediaWiki 1.35 historical test dependencies
+        if: inputs.mediawiki_branch == 'REL1_35'
+        run: composer install --no-interaction --prefer-dist --no-security-blocking
+        working-directory: mediawiki
+      - name: Install current MediaWiki test dependencies
+        if: inputs.mediawiki_branch != 'REL1_35'
+        run: composer install --no-interaction --prefer-dist
+        working-directory: mediawiki
+      - name: Validate extension registration (MediaWiki 1.35)
+        if: inputs.mediawiki_branch == 'REL1_35'
+        run: php maintenance/validateRegistrationFile.php extensions/MonsterEvolution/extension.json --conf extensions/MonsterEvolution/tests/compatibility/LocalSettings.php
+        working-directory: mediawiki
+      - name: Validate extension registration
+        if: inputs.mediawiki_branch != 'REL1_35'
+        run: php maintenance/run.php validateRegistrationFile extensions/MonsterEvolution/extension.json --conf extensions/MonsterEvolution/tests/compatibility/LocalSettings.php
+        working-directory: mediawiki
+      - name: Run standalone parser and security tests
+        run: php extensions/MonsterEvolution/tests/run-unit.php
+        working-directory: mediawiki
+      - name: Run MediaWiki integration tests
+        run: php tests/phpunit/phpunit.php extensions/MonsterEvolution/tests/phpunit
+        working-directory: mediawiki
+      - name: Render a graph through MediaWiki services
+        run: |
+          output="$(printf '%s\n' '$services = MediaWiki\MediaWikiServices::getInstance(); $parser = $services->getService( "MonsterEvolution.Parser" ); $renderer = $services->getService( "MonsterEvolution.Renderer" ); $source = "[node id=\"awburn\" name=\"Awburn\"]\n[node id=\"kainite\" name=\"Kainite\"]\nawburn -> kainite"; $html = $renderer->render( $parser->parse( $source ), new ParserOutput() ); if ( strpos( $html, "mw-monster-evolution" ) === false || strpos( $html, "Awburn" ) === false ) { throw new RuntimeException( "MonsterEvolution did not render the expected graph markup." ); } print "MonsterEvolution rendered through MediaWiki services.\n";' | php maintenance/eval.php --conf extensions/MonsterEvolution/tests/compatibility/LocalSettings.php)"
+          printf '%s\n' "$output"
+          grep -Fq 'MonsterEvolution rendered through MediaWiki services.' <<< "$output"
+        working-directory: mediawiki
+      - name: Verify ResourceLoader dependencies resolve
+        run: |
+          output="$(printf '%s\n' '$services = MediaWiki\MediaWikiServices::getInstance(); $loader = $services->getResourceLoader(); $module = $loader->getModule( "ext.monsterEvolution" ); if ( $module === null ) { throw new RuntimeException( "ext.monsterEvolution is not registered." ); } foreach ( $module->getDependencies() as $dependency ) { if ( $loader->getModule( $dependency ) === null ) { throw new RuntimeException( "Unknown ResourceLoader dependency: " . $dependency ); } } print "MonsterEvolution ResourceLoader dependencies resolved.\n";' | php maintenance/eval.php --conf extensions/MonsterEvolution/tests/compatibility/LocalSettings.php)"
+          printf '%s\n' "$output"
+          grep -Fq 'MonsterEvolution ResourceLoader dependencies resolved.' <<< "$output"
+        working-directory: mediawiki
+
+  release:
+    name: Package and publish ${{ github.ref_name }}
+    needs:
+      - validate-tag
+      - php-static
+      - javascript
+      - compatibility
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: monster-evolution-release-${{ github.ref_name }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build release archive
+        shell: bash
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+
+          package_root="build/$EXTENSION_NAME"
+          archive="$EXTENSION_NAME-$RELEASE_TAG.zip"
+          mkdir -p "$package_root" dist
+
+          cp -R demo docs i18n resources src "$package_root/"
+          cp CHANGELOG.md LICENSE README.md SECURITY.md Usage.md ServiceWiring.php composer.json extension.json package.json package-lock.json "$package_root/"
+
+          (
+            cd build
+            zip -q -9 -r "../dist/$archive" "$EXTENSION_NAME"
+          )
+          (
+            cd dist
+            sha256sum "$archive" > "$archive.sha256"
+          )
+
+      - name: Verify release archive
+        shell: bash
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+
+          archive="dist/$EXTENSION_NAME-$RELEASE_TAG.zip"
+          unzip -q "$archive" -d build/verify
+          test -f "build/verify/$EXTENSION_NAME/extension.json"
+          test -f "build/verify/$EXTENSION_NAME/ServiceWiring.php"
+          test -f "build/verify/$EXTENSION_NAME/Usage.md"
+          test -f "build/verify/$EXTENSION_NAME/demo/PokemonEevee.wiki"
+          test -f "build/verify/$EXTENSION_NAME/docs/ARCHITECTURE.md"
+          test -f "build/verify/$EXTENSION_NAME/resources/ext.monsterEvolution/evolution.js"
+          unzip -t "$archive"
+          (
+            cd dist
+            sha256sum --check "$EXTENSION_NAME-$RELEASE_TAG.zip.sha256"
+          )
+
+      - name: Upload verified workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MonsterEvolution-${{ github.ref_name }}
+          path: |
+            dist/MonsterEvolution-${{ github.ref_name }}.zip
+            dist/MonsterEvolution-${{ github.ref_name }}.zip.sha256
+          if-no-files-found: error
+
+      - name: Create GitHub release from the existing tag
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
+          MEDIAWIKI_VERSION: ${{ inputs.mediawiki_version }}
+          SOURCE_BRANCH: ${{ inputs.source_branch }}
+        run: |
+          set -euo pipefail
+
+          archive="dist/$EXTENSION_NAME-$RELEASE_TAG.zip"
+          gh release create "$RELEASE_TAG" \
+            "$archive" \
+            "$archive.sha256" \
+            --verify-tag \
+            --title "$EXTENSION_NAME for MediaWiki $MEDIAWIKI_VERSION ($RELEASE_TAG)" \
+            --notes "Verified compatibility release from the $SOURCE_BRANCH branch for MediaWiki $MEDIAWIKI_VERSION."
+
+          {
+            echo "### Published $EXTENSION_NAME for MediaWiki $MEDIAWIKI_VERSION"
+            echo
+            echo "Tag: \`$RELEASE_TAG\`"
+            echo
+            echo "Archive: \`$EXTENSION_NAME-$RELEASE_TAG.zip\`"
+          } >> "$GITHUB_STEP_SUMMARY"

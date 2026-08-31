@@ -286,9 +286,38 @@ The parser and renderer use stable modern interfaces documented in MediaWiki's t
 
 ### Automated releases
 
-The GitHub Actions workflow runs every verification job before its release job. A successful push to the repository's default branch publishes automatically; `workflow_dispatch` can publish a manually selected commit. Pull requests and scheduled runs verify the extension but never create releases.
+Release lines follow the supported MediaWiki branches:
 
-The release version starts with the numeric `MAJOR.MINOR.PATCH` value in `package.json`, which must match `extension.json`. If that tag already exists, the workflow increments the patch number until it finds the first unused tag. The generated tag points to the tested commit, or to a release-only child commit containing the incremented version metadata; it does not push that generated version commit onto the source branch. Each GitHub release contains `MonsterEvolution-VERSION.zip` and its SHA-256 checksum, and the same files remain available as a workflow artifact.
+| Extension branch | MediaWiki line | Release-tag format |
+| --- | --- | --- |
+| `main` | 1.46 | `REL_1_46_YY` |
+| `REL1_35` | 1.35 | `REL_1_35_YY` |
+
+`YY` is an administrator-selected, two-digit release number such as `01` or
+`10`. Pushing a matching tag starts that line's deployment workflow. The tag
+must point to the current head of its associated branch; an incorrectly named
+tag or a tag created from another commit is rejected before tests run.
+
+For example:
+
+```console
+git switch REL1_35
+git pull --ff-only
+git tag REL_1_35_01
+git push origin REL_1_35_01
+
+git switch main
+git pull --ff-only
+git tag REL_1_46_01
+git push origin REL_1_46_01
+```
+
+Each deployment reruns PHP linting, coding standards, Composer audit, Phan,
+JavaScript/CSS/security checks, browser layout tests, and the selected
+MediaWiki compatibility suite. Only then does it publish
+`MonsterEvolution-TAG.zip` and its SHA-256 checksum as both workflow artifacts
+and GitHub Release assets. Ordinary branch pushes, pull requests, and scheduled
+runs verify the project but never publish a release.
 
 ## License
 

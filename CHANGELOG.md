@@ -3,6 +3,7 @@
 ## Unreleased
 
 - Added an administrator-controlled maintenance category for pages whose MonsterEvolution node or arrow-label links have invalid or nonexistent internal targets.
+- Split releases into manually tagged MediaWiki 1.35 and 1.46 lines, with branch-head validation, line-specific compatibility tests, verified archives, and no automatic tag creation.
 
 ## 1.1.0 — 2026-08-28
 

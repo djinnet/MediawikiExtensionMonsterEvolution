@@ -113,6 +113,12 @@ edge drawing, zoom, highlighting, accessibility, and print fallback stay shared.
 
 The extension supports MediaWiki 1.35.2 through current tested branches. Avoid assuming current-only interfaces when a stable compatibility path exists. `Registration::installCompatibilityAliases()` contains the deliberate HTML-class compatibility shim. The ResourceLoader script avoids template literals because MediaWiki 1.35’s JavaScript minifier can corrupt them.
 
+Release maintenance is split between `main`, which is the MediaWiki 1.46
+development line, and `REL1_35`, which accepts only changes appropriate for the
+legacy MediaWiki 1.35 line. Deployment tags are deliberately separate from
+package metadata: `REL_1_46_YY` must point to the head of `main`, and
+`REL_1_35_YY` must point to the head of `REL1_35`.
+
 Run `tests/compatibility/check-minifier.php` against a MediaWiki 1.35 checkout whenever client source changes.
 
 ## Adding a feature safely
